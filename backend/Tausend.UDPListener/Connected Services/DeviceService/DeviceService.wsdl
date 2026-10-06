@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:wsap="http://schemas.xmlsoap.org/ws/2004/08/addressing/policy" xmlns:wsa10="http://www.w3.org/2005/08/addressing" xmlns:tns="http://Tausend.Wearelomo.com" xmlns:msc="http://schemas.microsoft.com/ws/2005/12/wsdl/contract" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:wsx="http://schemas.xmlsoap.org/ws/2004/09/mex" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:xsd="http://www.w3.org/2001/XMLSchema" name="DeviceService" targetNamespace="http://Tausend.Wearelomo.com" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <xsd:schema targetNamespace="http://Tausend.Wearelomo.com/Imports">
+      <xsd:import schemaLocation="http://tausend.wearelomo.com/Services/DeviceService.svc?xsd=xsd0" namespace="http://Tausend.Wearelomo.com" />
+      <xsd:import schemaLocation="http://tausend.wearelomo.com/Services/DeviceService.svc?xsd=xsd1" namespace="http://schemas.microsoft.com/2003/10/Serialization/" />
+      <xsd:import schemaLocation="http://tausend.wearelomo.com/Services/DeviceService.svc?xsd=xsd2" namespace="http://schemas.datacontract.org/2004/07/Tausend.Core.Enums" />
+      <xsd:import schemaLocation="http://tausend.wearelomo.com/Services/DeviceService.svc?xsd=xsd3" namespace="http://schemas.datacontract.org/2004/07/Tausend.Backend.Models" />
+    </xsd:schema>
+  </wsdl:types>
+  <wsdl:message name="DeviceService_CreateDevice_InputMessage">
+    <wsdl:part name="parameters" element="tns:CreateDevice" />
+  </wsdl:message>
+  <wsdl:message name="DeviceService_CreateDevice_OutputMessage">
+    <wsdl:part name="parameters" element="tns:CreateDeviceResponse" />
+  </wsdl:message>
+  <wsdl:message name="DeviceService_GetDeviceByIdentifier_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetDeviceByIdentifier" />
+  </wsdl:message>
+  <wsdl:message name="DeviceService_GetDeviceByIdentifier_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetDeviceByIdentifierResponse" />
+  </wsdl:message>
+  <wsdl:message name="DeviceService_GetDeviceByID_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetDeviceByID" />
+  </wsdl:message>
+  <wsdl:message name="DeviceService_GetDeviceByID_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetDeviceByIDResponse" />
+  </wsdl:message>
+  <wsdl:message name="DeviceService_DeleteDevice_InputMessage">
+    <wsdl:part name="parameters" element="tns:DeleteDevice" />
+  </wsdl:message>
+  <wsdl:message name="DeviceService_DeleteDevice_OutputMessage">
+    <wsdl:part name="parameters" element="tns:DeleteDeviceResponse" />
+  </wsdl:message>
+  <wsdl:message name="DeviceService_UpdateDeviceConnectionParameters_InputMessage">
+    <wsdl:part name="parameters" element="tns:UpdateDeviceConnectionParameters" />
+  </wsdl:message>
+  <wsdl:message name="DeviceService_UpdateDeviceConnectionParameters_OutputMessage">
+    <wsdl:part name="parameters" element="tns:UpdateDeviceConnectionParametersResponse" />
+  </wsdl:message>
+  <wsdl:message name="DeviceService_UpdateDeviceLastConnection_InputMessage">
+    <wsdl:part name="parameters" element="tns:UpdateDeviceLastConnection" />
+  </wsdl:message>
+  <wsdl:message name="DeviceService_UpdateDeviceLastConnection_OutputMessage">
+    <wsdl:part name="parameters" element="tns:UpdateDeviceLastConnectionResponse" />
+  </wsdl:message>
+  <wsdl:portType name="DeviceService">
+    <wsdl:operation name="CreateDevice">
+      <wsdl:input wsaw:Action="http://Tausend.Wearelomo.com/DeviceService/CreateDevice" message="tns:DeviceService_CreateDevice_InputMessage" />
+      <wsdl:output wsaw:Action="http://Tausend.Wearelomo.com/DeviceService/CreateDeviceResponse" message="tns:DeviceService_CreateDevice_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetDeviceByIdentifier">
+      <wsdl:input wsaw:Action="http://Tausend.Wearelomo.com/DeviceService/GetDeviceByIdentifier" message="tns:DeviceService_GetDeviceByIdentifier_InputMessage" />
+      <wsdl:output wsaw:Action="http://Tausend.Wearelomo.com/DeviceService/GetDeviceByIdentifierResponse" message="tns:DeviceService_GetDeviceByIdentifier_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetDeviceByID">
+      <wsdl:input wsaw:Action="http://Tausend.Wearelomo.com/DeviceService/GetDeviceByID" message="tns:DeviceService_GetDeviceByID_InputMessage" />
+      <wsdl:output wsaw:Action="http://Tausend.Wearelomo.com/DeviceService/GetDeviceByIDResponse" message="tns:DeviceService_GetDeviceByID_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="DeleteDevice">
+      <wsdl:input wsaw:Action="http://Tausend.Wearelomo.com/DeviceService/DeleteDevice" message="tns:DeviceService_DeleteDevice_InputMessage" />
+      <wsdl:output wsaw:Action="http://Tausend.Wearelomo.com/DeviceService/DeleteDeviceResponse" message="tns:DeviceService_DeleteDevice_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="UpdateDeviceConnectionParameters">
+      <wsdl:input wsaw:Action="http://Tausend.Wearelomo.com/DeviceService/UpdateDeviceConnectionParameters" message="tns:DeviceService_UpdateDeviceConnectionParameters_InputMessage" />
+      <wsdl:output wsaw:Action="http://Tausend.Wearelomo.com/DeviceService/UpdateDeviceConnectionParametersResponse" message="tns:DeviceService_UpdateDeviceConnectionParameters_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="UpdateDeviceLastConnection">
+      <wsdl:input wsaw:Action="http://Tausend.Wearelomo.com/DeviceService/UpdateDeviceLastConnection" message="tns:DeviceService_UpdateDeviceLastConnection_InputMessage" />
+      <wsdl:output wsaw:Action="http://Tausend.Wearelomo.com/DeviceService/UpdateDeviceLastConnectionResponse" message="tns:DeviceService_UpdateDeviceLastConnection_OutputMessage" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:service name="DeviceService" />
+</wsdl:definitions>

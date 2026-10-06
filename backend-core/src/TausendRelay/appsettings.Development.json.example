@@ -1,0 +1,5 @@
+{
+  "_comment": "Copy to appsettings.Development.json (gitignored) and fill in real local values.",
+  "BackendBaseUrl": "http://localhost:5000",
+  "RelaySystemKey": "YOUR_RELAY_SYSTEM_KEY"
+}

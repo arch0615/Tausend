@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Panel Wi-Fi pairing (see src/pairing/) talks to the panel's own local access point over plain,
+  unencrypted TCP: the embedded panel hardware has no TLS support, and this is a private,
+  device-to-device link the phone is directly joined to, not the open internet. Android 9+ blocks
+  cleartext traffic app-wide by default in release builds, so this allowlists cleartext for just
+  the panel's known local-AP IP rather than disabling the protection entirely.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">192.168.4.1</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

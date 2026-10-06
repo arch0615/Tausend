@@ -1,0 +1,7 @@
+﻿CREATE TABLE [dbo].[UserTags]
+(
+	[UserTagId] BIGINT NOT NULL PRIMARY KEY IDENTITY(1,1),
+	UserNumber INT NOT NULL,
+	[UserName] NVARCHAR(100) NOT NULL,
+	DeviceId BIGINT NOT NULL REFERENCES Devices(DeviceId)
+)

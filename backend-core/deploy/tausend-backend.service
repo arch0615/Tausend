@@ -1,0 +1,18 @@
+[Unit]
+Description=Tausend Backend API (TausendBackend.Api)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/tausend/backend
+ExecStart=/usr/bin/dotnet /opt/tausend/backend/TausendBackend.Api.dll
+Restart=on-failure
+RestartSec=5
+User=tausend
+Environment=ASPNETCORE_ENVIRONMENT=Production
+# Bound to localhost -- nginx (or another reverse proxy) terminates TLS on 443/80 and forwards
+# here. Don't point this at 0.0.0.0 in production; see README.md's "Deploying to Ubuntu" section.
+Environment=ASPNETCORE_URLS=http://127.0.0.1:5000
+
+[Install]
+WantedBy=multi-user.target

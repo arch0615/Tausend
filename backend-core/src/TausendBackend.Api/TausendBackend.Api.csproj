@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <!-- Same package the old WCF backend uses for FCM v1's OAuth token (see
+         backend/Tausend.Core/Business/FirebasePushNotificationBusiness.cs): just the OAuth2
+         client, not the Firebase Admin SDK, to hand-roll the FCM v1 HTTP API the same way. -->
+    <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
+  </ItemGroup>
+
+</Project>

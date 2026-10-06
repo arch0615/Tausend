@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug-build-only override of ../../../main/res/xml/network_security_config.xml: Android
+  resource merging uses this one instead of main's for debug builds specifically, so release
+  builds stay exactly as locked-down as before. Adds cleartext for the addresses a local dev
+  backend is reached through during development, on top of the panel's own local-AP address that
+  main's version already allows: 157.230.209.102 is the VPS's public IP (see src/api/client.ts's
+  API_BASE, __DEV__ branch), reached in plain HTTP via nginx's port-80 default server; production
+  instead rides app.alarmastausend.com's real TLS, so this exception is debug-only regardless.
+  10.0.2.2/localhost/127.0.0.1 are kept too for anyone still testing via an SSH tunnel or adb
+  reverse instead of the direct IP.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">192.168.4.1</domain>
+        <domain includeSubdomains="false">157.230.209.102</domain>
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

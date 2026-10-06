@@ -1,0 +1,321 @@
+﻿<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>
+    </ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{3679E362-37F6-4B01-8E03-550A40670766}</ProjectGuid>
+    <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Tausend.Core</RootNamespace>
+    <AssemblyName>Tausend.Core</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <WcfConfigValidationEnabled>True</WcfConfigValidationEnabled>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <UseIISExpress>true</UseIISExpress>
+    <Use64BitIISExpress />
+    <IISExpressSSLPort>44330</IISExpressSSLPort>
+    <IISExpressAnonymousAuthentication>enabled</IISExpressAnonymousAuthentication>
+    <IISExpressWindowsAuthentication>disabled</IISExpressWindowsAuthentication>
+    <IISExpressUseClassicPipelineMode>false</IISExpressUseClassicPipelineMode>
+    <UseGlobalApplicationHostFile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>
+    </DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="BCrypt.Net-Next, Version=4.0.3.0, Culture=neutral, PublicKeyToken=1e11be04b6288443, processorArchitecture=MSIL">
+      <HintPath>..\packages\BCrypt.Net-Next.4.0.3\lib\net472\BCrypt.Net-Next.dll</HintPath>
+    </Reference>
+    <!-- BCrypt.Net-Next's net472 build needs the Span<T> polyfill (System.Memory) and its own transitive deps -->
+    <Reference Include="System.Buffers, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Buffers.4.6.1\lib\net462\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Memory, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Memory.4.6.3\lib\net462\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics.Vectors, Version=4.1.6.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Numerics.Vectors.4.6.1\lib\net462\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.1.2\lib\net462\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="Google.Apis, Version=1.68.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.1.68.0\lib\net462\Google.Apis.dll</HintPath>
+    </Reference>
+    <Reference Include="Google.Apis.Auth, Version=1.68.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.Auth.1.68.0\lib\net462\Google.Apis.Auth.dll</HintPath>
+    </Reference>
+    <Reference Include="Google.Apis.Core, Version=1.68.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.Core.1.68.0\lib\net462\Google.Apis.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="RestSharp, Version=106.0.0.0, Culture=neutral, PublicKeyToken=598062e77f915f75, processorArchitecture=MSIL">
+      <HintPath>..\packages\RestSharp.106.10.1\lib\net452\RestSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="System.CodeDom, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.CodeDom.7.0.0\lib\net462\System.CodeDom.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Management" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Web.DynamicData" />
+    <Reference Include="System.Web.Entity" />
+    <Reference Include="System.Web.ApplicationServices" />
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.EnterpriseServices" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.ServiceModel.Web" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Web.Services" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Global.asax" />
+    <Content Include="Services\AccountService.svc" />
+    <Content Include="Services\AdminService.svc" />
+    <Content Include="Services\CommandService.svc" />
+    <Content Include="Services\DeviceService.svc" />
+    <Content Include="Services\NotificationService.svc" />
+    <Content Include="Web.config" />
+    <Content Include="ConnectionStrings.config.example" />
+    <Content Include="Secrets.config.example" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Business\AccountBusiness.cs" />
+    <Compile Include="Business\AdminBusiness.cs" />
+    <Compile Include="Business\CommandBusiness.cs" />
+    <Compile Include="Business\DeviceBusiness.cs" />
+    <Compile Include="Business\EmailBusiness.cs" />
+    <Compile Include="Business\ExclusionBusiness.cs" />
+    <Compile Include="Business\FirebasePushNotificationBusiness.cs" />
+    <Compile Include="Business\NotificationBusiness.cs" />
+    <Compile Include="Business\ProgramControlBusiness.cs" />
+    <Compile Include="Business\PushNotificationBusiness.cs" />
+    <Compile Include="Business\UserBusiness.cs" />
+    <Compile Include="Business\ZoneBusiness.cs" />
+    <Compile Include="Dao\AdminDao.cs" />
+    <Compile Include="Dao\EventDao.cs" />
+    <Compile Include="Dao\ExclusionDao.cs" />
+    <Compile Include="Dao\ProgramControlDao.cs" />
+    <Compile Include="Dao\UserDao.cs" />
+    <Compile Include="Dao\ZoneDao.cs" />
+    <Compile Include="Entities\Commands\BaseCommand.cs" />
+    <Compile Include="Entities\Commands\ProgramCommand.cs" />
+    <Compile Include="Entities\Commands\VersionCommand.cs" />
+    <Compile Include="Dao\AccountDao.cs" />
+    <Compile Include="Dao\BaseDao.cs" />
+    <Compile Include="Dao\DeviceDao.cs" />
+    <Compile Include="Database\DBContext.cs" />
+    <Compile Include="Entities\Enums\AccountRole.cs" />
+    <Compile Include="Entities\Enums\NotificationTypes.cs" />
+    <Compile Include="Entities\Enums\PhoneTypes.cs" />
+    <Compile Include="Entities\Enums\ResponseStates.cs" />
+    <Compile Include="Entities\Enums\COMMANDS.cs" />
+    <Compile Include="Entities\Models\AccountSmsDevice.cs" />
+    <Compile Include="Entities\Models\AdminAccountSummary.cs" />
+    <Compile Include="Entities\Models\AdminDeviceSummary.cs" />
+    <Compile Include="Entities\Models\Event.cs" />
+    <Compile Include="Entities\Models\Exclusion.cs" />
+    <Compile Include="Entities\Models\ProgramControl.cs" />
+    <Compile Include="Entities\Models\User.cs" />
+    <Compile Include="Entities\Models\Zone.cs" />
+    <Compile Include="Entities\Notifications\AssaultNotification.cs" />
+    <Compile Include="Entities\Notifications\AutoArm.cs" />
+    <Compile Include="Entities\Notifications\AutoArmCanceledNotification.cs" />
+    <Compile Include="Entities\Notifications\AutoArmFailNotification.cs" />
+    <Compile Include="Entities\Notifications\Auxiliar12VFail.cs" />
+    <Compile Include="Entities\Notifications\BatteryFail.cs" />
+    <Compile Include="Entities\Notifications\BellDisarmNotification.cs" />
+    <Compile Include="Entities\Notifications\BusFailNotification.cs" />
+    <Compile Include="Entities\Notifications\ClockFailNotification.cs" />
+    <Compile Include="Entities\Notifications\CommunicatorFail.cs" />
+    <Compile Include="Entities\Notifications\FastArmNotification.cs" />
+    <Compile Include="Entities\Notifications\FireNotification.cs" />
+    <Compile Include="Entities\Notifications\GasNotification.cs" />
+    <Compile Include="Entities\Notifications\InvalidFailNotification.cs" />
+    <Compile Include="Entities\Notifications\KeyArmDisarmNotification.cs" />
+    <Compile Include="Entities\Notifications\KeypadAssaultNotification.cs" />
+    <Compile Include="Entities\Notifications\ManualTestNotification.cs" />
+    <Compile Include="Entities\Notifications\MedicalNotification.cs" />
+    <Compile Include="Entities\Notifications\MemoryDisarmedNotification.cs" />
+    <Compile Include="Entities\Notifications\PanicNotification.cs" />
+    <Compile Include="Entities\Notifications\PartArmNotification.cs" />
+    <Compile Include="Entities\Notifications\PeriodicTestNotification.cs" />
+    <Compile Include="Entities\Notifications\PersonalMedicalNotification.cs" />
+    <Compile Include="Entities\Notifications\PhoneLineFailNotification.cs" />
+    <Compile Include="Entities\Notifications\PointAccessControlNotification.cs" />
+    <Compile Include="Entities\Notifications\ProgramNotification.cs" />
+    <Compile Include="Entities\Notifications\RecentArmedAlarmNotification.cs" />
+    <Compile Include="Entities\Notifications\SabotageNotification.cs" />
+    <Compile Include="Entities\Notifications\ServerComunicationFail.cs" />
+    <Compile Include="Entities\Notifications\SilentAlarm.cs" />
+    <Compile Include="Entities\Notifications\SilentPanicNotification.cs" />
+    <Compile Include="Entities\Notifications\Siren1FailNotification.cs" />
+    <Compile Include="Entities\Notifications\Siren2FailNotification.cs" />
+    <Compile Include="Entities\Notifications\UserLink3FailNotification.cs" />
+    <Compile Include="Entities\Notifications\StoleNotification.cs" />
+    <Compile Include="Entities\Notifications\UnknownEventNotification.cs" />
+    <Compile Include="Entities\Notifications\UserAccessControlNotification.cs" />
+    <Compile Include="Entities\Notifications\UserArmDisarm.cs" />
+    <Compile Include="Entities\Notifications\UserLinkedNotification.cs" />
+    <Compile Include="Entities\Notifications\VACLineFailNotification.cs" />
+    <Compile Include="Entities\Notifications\ZoneBypassNotification.cs" />
+    <Compile Include="Entities\Notifications\ZoneCrossNotification.cs" />
+    <Compile Include="Entities\Requests\AccessTokenRequest.cs" />
+    <Compile Include="Entities\Requests\UpdateDeviceSMSRequest.cs" />
+    <Compile Include="Entities\Requests\CreateDeviceSMSRequest.cs" />
+    <Compile Include="Entities\Requests\CreateExclusionRequest.cs" />
+    <Compile Include="Entities\Requests\CreateProgramControlRequest.cs" />
+    <Compile Include="Entities\Requests\CreateZoneRequest.cs" />
+    <Compile Include="Entities\Requests\DeviceTokenRequest.cs" />
+    <Compile Include="Entities\Requests\IdentifierCommandRequest.cs" />
+    <Compile Include="Entities\Requests\InstallerCommandRequest.cs" />
+    <Compile Include="Entities\Requests\ListOfUsersRequest.cs" />
+    <Compile Include="Entities\Requests\NotificationRequest.cs" />
+    <Compile Include="Entities\Requests\PinRequest.cs" />
+    <Compile Include="Entities\Requests\RefreshTokenRequest.cs" />
+    <Compile Include="Entities\Requests\ResetPasswordRequest.cs" />
+    <Compile Include="Entities\Requests\SetAccountRoleRequest.cs" />
+    <Compile Include="Entities\Responses\CommandService\BatteryStateResponse.cs" />
+    <Compile Include="Entities\Responses\CommandService\FailStatusResponse.cs" />
+    <Compile Include="Entities\Responses\CommandService\ListOfEventsResponse.cs" />
+    <Compile Include="Entities\Responses\CommandService\ListOfExclusionsResponse.cs" />
+    <Compile Include="Entities\Responses\CommandService\ListOfProgramControlResponse.cs" />
+    <Compile Include="Entities\Responses\CommandService\ListOfZonesResponse.cs" />
+    <Compile Include="Entities\Responses\CommandService\ZonesResponse.cs" />
+    <Compile Include="Entities\Responses\DeviceService\TimeResponse.cs" />
+    <Compile Include="Entities\Responses\DeviceService\ListOfUserResponse.cs" />
+    <Compile Include="Entities\Responses\SimpleResponse.cs" />
+    <Compile Include="Factories\NotificationBuilder.cs" />
+    <Compile Include="Factories\PushNotificationBusinessFactory.cs" />
+    <Compile Include="Global.asax.cs">
+      <DependentUpon>Global.asax</DependentUpon>
+    </Compile>
+    <Compile Include="Security\PasswordHasher.cs" />
+    <Compile Include="Security\SystemAuth.cs" />
+    <Compile Include="Entities\Models\Account.cs" />
+    <Compile Include="Entities\Models\AccountDevice.cs" />
+    <Compile Include="Entities\Models\DeviceToken.cs" />
+    <Compile Include="Entities\Notifications\EmergencyNotification.cs" />
+    <Compile Include="Entities\Requests\CommandRequest.cs" />
+    <Compile Include="Entities\Requests\CreateDeviceRequest.cs" />
+    <Compile Include="Entities\Models\Device.cs" />
+    <Compile Include="Entities\Models\NewDeviceToken.cs" />
+    <Compile Include="Entities\Models\Email.cs" />
+    <Compile Include="Entities\Models\EmailSettings.cs" />
+    <Compile Include="Entities\Requests\ExclusionRequest.cs" />
+    <Compile Include="Entities\Notifications\NotificationBase.cs" />
+    <Compile Include="Entities\Requests\PGMRequest.cs" />
+    <Compile Include="Entities\Notifications\TestNotification.cs" />
+    <Compile Include="Entities\Requests\UpdateAccountRequest.cs" />
+    <Compile Include="Entities\Requests\UpdateDeviceRequest.cs" />
+    <Compile Include="Entities\Responses\AccountService\AccountDeletedResponse.cs" />
+    <Compile Include="Entities\Responses\AdminService\ListOfAdminAccountsResponse.cs" />
+    <Compile Include="Entities\Responses\AdminService\ListOfAdminDevicesResponse.cs" />
+    <Compile Include="Entities\Responses\BaseResponse.cs" />
+    <Compile Include="Entities\Responses\AccountService\AccountCreatedResponse.cs" />
+    <Compile Include="Entities\Responses\AccountService\AccountLoginResponse.cs" />
+    <Compile Include="Entities\Responses\CommandService\CommandResponse.cs" />
+    <Compile Include="Entities\Responses\DeviceService\CreatedDeviceResponse.cs" />
+    <Compile Include="Entities\Responses\DeviceService\DeletedDeviceResponse.cs" />
+    <Compile Include="Entities\Responses\DeviceService\DeviceResponse.cs" />
+    <Compile Include="Entities\Responses\DeviceService\UpdateDeviceResponse.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Entities\Responses\PrivateService\SendCommandResult.cs" />
+    <Compile Include="Entities\Responses\PrivateService\SendCommandResultWraper.cs" />
+    <Compile Include="Services\AccountService.svc.cs">
+      <DependentUpon>AccountService.svc</DependentUpon>
+    </Compile>
+    <Compile Include="Services\AdminService.svc.cs">
+      <DependentUpon>AdminService.svc</DependentUpon>
+    </Compile>
+    <Compile Include="Services\CommandService.svc.cs">
+      <DependentUpon>CommandService.svc</DependentUpon>
+    </Compile>
+    <Compile Include="Services\DeviceService.svc.cs">
+      <DependentUpon>DeviceService.svc</DependentUpon>
+    </Compile>
+    <Compile Include="Services\IAccountService.cs" />
+    <Compile Include="Services\IAdminService.cs" />
+    <Compile Include="Services\ICommandService.cs" />
+    <Compile Include="Services\IDeviceService.cs" />
+    <Compile Include="Services\INotificationService.cs" />
+    <Compile Include="Services\NotificationService.svc.cs">
+      <DependentUpon>NotificationService.svc</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="App_Data\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="Properties\PublishProfiles\FolderProfile.pubxml" />
+    <None Include="Web.Debug.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </None>
+    <None Include="Web.Release.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </None>
+  </ItemGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+  </PropertyGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" Condition="false" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
+        <WebProjectProperties>
+          <UseIIS>True</UseIIS>
+          <AutoAssignPort>True</AutoAssignPort>
+          <DevelopmentServerPort>57328</DevelopmentServerPort>
+          <DevelopmentServerVPath>/</DevelopmentServerVPath>
+          <IISUrl>http://localhost:53632/</IISUrl>
+          <NTLMAuthentication>False</NTLMAuthentication>
+          <UseCustomServer>False</UseCustomServer>
+          <CustomServerUrl>
+          </CustomServerUrl>
+          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
+        </WebProjectProperties>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

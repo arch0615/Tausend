@@ -1,0 +1,24 @@
+# --- Secrets: never commit, regardless of where they sit in the tree ---
+*firebase-adminsdk*.json
+*.pfx
+.env
+.env.*
+ConnectionStrings.config
+Secrets.config
+
+# --- .NET backend (see backend/.gitignore for the full Visual Studio list) ---
+[Bb]in/
+[Oo]bj/
+.vs/
+**/packages/*
+!**/packages/build/
+
+# --- React Native app (Phase 4 onward) ---
+node_modules/
+ios/Pods/
+ios/build/
+android/build/
+android/app/build/
+android/.gradle/
+*.keystore
+!debug.keystore

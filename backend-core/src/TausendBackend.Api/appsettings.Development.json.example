@@ -1,0 +1,11 @@
+{
+  "_comment": "Copy to appsettings.Development.json (gitignored) and fill in real local values.",
+  "ConnectionStrings": {
+    "TausendConnectionString": "Server=localhost;Database=TausendLocal;Integrated Security=true;TrustServerCertificate=true;"
+  },
+  "SendGrid": {
+    "ApiKey": "YOUR_SENDGRID_API_KEY"
+  },
+  "AllowedOrigins": [ "http://localhost:5173", "http://localhost:5174" ],
+  "RelaySystemKey": "YOUR_RELAY_SYSTEM_KEY"
+}

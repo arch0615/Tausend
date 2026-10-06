@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ReferenceGroup xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ID="2b05a5e7-79ec-4c1d-87b7-ed03bc260910" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
+  <ClientOptions>
+    <GenerateAsynchronousMethods>false</GenerateAsynchronousMethods>
+    <GenerateTaskBasedAsynchronousMethod>true</GenerateTaskBasedAsynchronousMethod>
+    <EnableDataBinding>true</EnableDataBinding>
+    <ExcludedTypes />
+    <ImportXmlTypes>false</ImportXmlTypes>
+    <GenerateInternalTypes>false</GenerateInternalTypes>
+    <GenerateMessageContracts>false</GenerateMessageContracts>
+    <NamespaceMappings />
+    <CollectionMappings />
+    <GenerateSerializableTypes>true</GenerateSerializableTypes>
+    <Serializer>Auto</Serializer>
+    <UseSerializerForFaults>true</UseSerializerForFaults>
+    <ReferenceAllAssemblies>true</ReferenceAllAssemblies>
+    <ReferencedAssemblies />
+    <ReferencedDataContractTypes />
+    <ServiceContractMappings />
+  </ClientOptions>
+  <MetadataSources>
+    <MetadataSource Address="http://tausend.wearelomo.com/Services/DeviceService.svc" Protocol="http" SourceId="1" />
+  </MetadataSources>
+  <Metadata>
+    <MetadataFile FileName="DeviceService.disco" MetadataType="Disco" ID="f9ebd847-018d-4da1-a0e2-46308570148e" SourceId="1" SourceUrl="http://tausend.wearelomo.com/Services/DeviceService.svc?disco" />
+    <MetadataFile FileName="DeviceService.xsd" MetadataType="Schema" ID="957fe503-6d04-4d35-97bf-e674819e491f" SourceId="1" SourceUrl="http://tausend.wearelomo.com/Services/DeviceService.svc?xsd=xsd1" />
+    <MetadataFile FileName="DeviceService1.xsd" MetadataType="Schema" ID="6922fba8-4d26-4da6-8c94-963576768bbd" SourceId="1" SourceUrl="http://tausend.wearelomo.com/Services/DeviceService.svc?xsd=xsd3" />
+    <MetadataFile FileName="DeviceService2.xsd" MetadataType="Schema" ID="4478f361-14b3-416b-b2e8-2ccdf65b508c" SourceId="1" SourceUrl="http://tausend.wearelomo.com/Services/DeviceService.svc?xsd=xsd0" />
+    <MetadataFile FileName="DeviceService3.xsd" MetadataType="Schema" ID="141049af-177d-44b5-bc6e-a8e2bce130c5" SourceId="1" SourceUrl="http://tausend.wearelomo.com/Services/DeviceService.svc?xsd=xsd2" />
+    <MetadataFile FileName="DeviceService.wsdl" MetadataType="Wsdl" ID="2b1f605c-9413-43ac-beba-730c83ef5a76" SourceId="1" SourceUrl="http://tausend.wearelomo.com/Services/DeviceService.svc?wsdl" />
+  </Metadata>
+  <Extensions>
+    <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />
+    <ExtensionFile FileName="configuration.svcinfo" Name="configuration.svcinfo" />
+  </Extensions>
+</ReferenceGroup>

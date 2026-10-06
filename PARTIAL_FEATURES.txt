@@ -1,0 +1,57 @@
+1. User Registration — account creation and validation work, but on success the app sends the user to a manual login screen instead of continuing into an authenticated session automatically.
+
+2. User Login — login and secure token storage work, but there's no silent refresh when a session expires mid-use; every screen forces a full logout instead of quietly refreshing the token.
+
+3. Password Recovery — requesting a reset link works correctly, but the actual "enter token, set new password" flow lives entirely on an external web page, not inside the app.
+
+4. Session Management — the core mechanism is correct, but session-expiry handling isn't centralized. A few screens (change password, save panel users, save zone exclusions, PGM toggle) don't check for an expired session on save, only on load.
+
+6. Wi-Fi Panel Pairing — the full pairing flow works end to end, but the specific improvement requested, reducing manual Wi-Fi network name and password entry, hasn't been done. The user still has to type both by hand every time.
+
+8. SMS Command Fallback — most command categories work and open the SMS composer correctly, but zone exclusion and PGM control commands exist in the code and are never actually reachable from any screen for SMS panels.
+
+9. Pairing Confirmation — a success screen shows, but it doesn't display the panel's identifier, chosen name, or initial state, just a generic "done" message.
+
+12. Panel Selection — shows panel name, selection state, and online/offline status, but doesn't show the panel's current alarm state (armed or disarmed) in the selector itself.
+
+14. Home/Main Control Screen — never assumes a command succeeded, which is the important part, but connectivity status isn't shown on this screen, and faults only appear as a small secondary badge rather than in the main status.
+
+15-18. Arm, Disarm, Day Arm, Night Arm — all four work correctly and are driven by the real panel response, but every rejection reason (offline, not ready, business error) collapses into one generic "the panel did not respond" message instead of telling the user what specifically went wrong.
+
+19. Real Panel Status — correctly clears stale data when the panel goes unreachable, but "offline" and "no response" look identical, and fault state isn't part of the main status display.
+
+22. Zone Bypass/Exclusion — the checkbox toggles optimistically in the UI, but the save step does wait for and display the real panel-confirmed result, so it never shows a false success, just not structured the way the spec describes it.
+
+23. Zone Memory/History — shows which zones are currently in memory, but there are no timestamps and no history, it's a live snapshot, not a log.
+
+27. Panel User Labels — assigning and saving labels works, but the labels never appear in event history because the backend's event data doesn't currently carry a user reference to match against.
+
+30. Battery Status — shows real voltage and current readings, but there's no condition assessment or warning threshold, just raw numbers.
+
+32. Panel Connectivity Status — offline handling works in most places, but the "online" indicator in the panel selector is a snapshot that isn't actively polled and can go stale with no visual indication.
+
+35. Medical Emergency Alarm — sends and confirms correctly, but the confirmation is the same small generic banner used everywhere else, not the extremely clear feedback a safety action needs.
+
+36. Alarm Event History — connected to a real backend and lists events, but the backend query only returns a timestamp and description right now, not event type, zone, or user, so most of the detail the spec describes has nowhere to come from yet.
+
+40. Push Notification Registration — the backend endpoint and a client-side wrapper for it both exist, but nothing in the app ever calls it, so no permission is requested and no token is ever obtained.
+
+42. Custom Messages — editing and sending the correct command both work, but there's no in-app confirmation of the panel's reply, which arrives as a separate text message outside the app by design.
+
+43. Contact Phone Configuration — same pattern and same limitation as Custom Messages.
+
+45. Synchronize Panel Clock — syncs the panel to the server's time and confirms it, but there's no option to sync from the phone's own clock or choose a custom time, only the one fixed action.
+
+52. Offline Panel Handling — clear messaging and a working retry button exist, but the "pull to refresh" text doesn't match reality, no pull gesture is wired up, only the tap-to-retry button works.
+
+53. Backend Connection Errors — errors are caught and prior state is preserved correctly, but different server error types all show the same generic message instead of being distinguished.
+
+56. Spanish User Interface — translations are essentially complete, but the app currently defaults to English rather than Spanish.
+
+60. Android Application — the build pipeline works, but it falls back to debug signing since there's no real release keystore yet, and there's no Play Store listing scaffolding.
+
+61. iOS Application — a real Xcode project exists, but its dependencies have never been installed and no signing team is configured. This also can't be verified further from this Windows environment regardless of code state.
+
+68. Real Physical Panel Validation — some real-panel testing has happened over the course of the project, but a complete, documented pass across every item on the spec's own pre-release checklist hasn't been done.
+
+69. Android Production Release — same root cause as item 60: the build works, but signing, store listing, and submission are all still outstanding.

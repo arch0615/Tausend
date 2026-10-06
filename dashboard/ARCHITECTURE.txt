@@ -1,0 +1,260 @@
+TAUSEND ADMIN DASHBOARD -- ARCHITECTURE AND REQUIREMENTS ANALYSIS
+===================================================================
+Written after reviewing every source file in dashboard/src (18 files) and cross-checking
+against the backend's actual AdminController endpoints and the 30-Day Work Schedule's Phase 3
+requirements (Days 6-8). Purpose: explain exactly what exists, why it satisfies the original
+schedule on paper, and precisely what's missing that explains the "very simple" impression.
+
+UPDATE -- redesigned into a fuller admin product, sections 6-8 below are now historical (the
+"before" state, kept for the record) rather than current. What changed:
+
+- New Overview page (KPI cards: account counts by role, device counts online/offline/disabled,
+  recent audit activity) -- now the default landing route instead of redirecting straight into
+  the Accounts table.
+- New Account Detail page (/accounts/:accountId) and Device Detail page (/devices/:deviceId) --
+  the account<->device linkage gap (#2 in the old gap list) is closed: either page now shows the
+  other side of the relationship. Backed by a new AdminService/EnumAccountDeviceLinks endpoint
+  (backend-core) returning every AccountId<->DeviceId pair, correlated client-side against the
+  already-loaded accounts/devices lists.
+- Device Detail page also shows LIVE panel diagnostics (status, battery, faults, zone open/
+  excluded state) using an Admin's own token against any device in the fleet -- gap #3 closed.
+  This required a real backend fix, not just new UI: CommandBusiness.CreateBody (and Exclusion/
+  PGMCommand) previously resolved the target device from the CALLING account's own device list,
+  so even though CommandController's ownership check already had an Admin bypass, live commands
+  for a device an admin doesn't personally own silently no-op'd (null identifier sent to the
+  relay). Fixed by resolving the device unscoped by DeviceId instead (via DeviceDao directly, not
+  DeviceBusiness -- DeviceBusiness itself depends on CommandBusiness, so that would've been a
+  circular constructor dependency), since ownership is already verified by the calling controller
+  before these methods run.
+- Session refresh wired up (gap #5 closed) -- AuthContext now has a real refresh() using the
+  already-fetched RefreshToken, and a new shared useApiCall() hook tries it automatically on any
+  UNAUTHORIZED response, retrying the original call once, before falling back to a full logout.
+- Shared authenticated-fetch layer (gap #6 closed) -- api/client.ts now auto-injects the token
+  the same way the mobile app's client.ts always has (setAccessToken/getAccessToken), and every
+  api/*.ts function dropped its manual accessToken parameter. useApiCall() replaces the "check
+  UNAUTHORIZED, logout, navigate" block every page used to repeat by hand.
+- Gaps NOT addressed in this pass, still open: pagination/server-side search (#4), account
+  enable/disable/password-reset controls, sortable columns, a dashboard-specific QA checklist.
+  These are still real gaps worth a conversation with the client about priority -- this redesign
+  targeted the highest-impact ones from the original analysis, not all ten.
+
+
+1. TECH STACK
+===================================================================
+- React 19.2 + TypeScript, built with Vite 8
+- react-router-dom 7 for client-side routing
+- No UI component library, no CSS framework -- hand-written CSS (442 lines total across 5
+  files), no design system, no charts/graphing library
+- No state management library -- plain React Context (AuthContext) + component-local useState
+- No test suite for the dashboard specifically (mobile has jest; dashboard has neither jest nor
+  any other test runner configured)
+- Build output: a single ~250KB JS bundle + ~5.5KB CSS, served as static files
+- 32 total npm packages (react, react-dom, react-router-dom + their transitive deps and the
+  Vite/TS toolchain) -- this is a genuinely small, minimal-dependency app, not a partially-built
+  large one
+
+
+2. DEPLOYMENT ARCHITECTURE
+===================================================================
+Currently live at https://app.alarmastausend.com (TLS via Let's Encrypt) and, for local
+development, http://localhost:8080 via SSH tunnel to the VPS.
+
+    Browser
+      |
+      v
+    nginx (app.alarmastausend.com, port 443/8080)
+      |-- "/"      -> serves the built static SPA (dashboard/dist, uploaded to
+      |               /opt/tausend/dashboard on the VPS)
+      |-- "/api/*" -> reverse-proxied to backend-core on 127.0.0.1:5000, "/api" prefix
+                       stripped before proxying (same-origin, no CORS needed)
+
+The backend itself (backend-core, ASP.NET Core / .NET 8) is the SAME backend the mobile app
+talks to -- there is no separate "admin API," just seven Admin-role-gated endpoints on the same
+AdminController used alongside AccountService/DeviceService/CommandService.
+
+
+3. ROUTING / PAGE MAP
+===================================================================
+/login                          LoginPage        -- admin sign-in
+/accounts                       AccountsPage      \
+/devices                        DevicesPage        } behind RequireAdmin + DashboardLayout
+/devices/:deviceId/users        DeviceUsersPage    /  (sidebar: Accounts / Devices / Audit log)
+/audit-log                      AuditLogPage      /
+*  (anything else)              redirects to /accounts
+
+There is no "/" landing/overview page -- the app has no home screen, no summary/KPI view of
+any kind. Landing on the root URL, or any unrecognized path, drops the admin straight into the
+raw Accounts table. This is very likely the single biggest reason the dashboard "feels simple":
+there's nothing dashboard-like about the entry point, it's a CRUD table app.
+
+
+4. AUTH MODEL
+===================================================================
+- LoginPage -> AuthContext.login() -> AccountService/Login (same endpoint the mobile app uses)
+- Client-side check: rejects if the returned Account.Role isn't Admin (AccountRole.Admin = 2)
+  -- this is UX only, not a real boundary. The real boundary is server-side: every
+  AdminService.* endpoint independently re-validates the caller's Role on the backend
+  (confirmed by reading AdminController.cs), so a non-admin token gets rejected there
+  regardless of what the client shows.
+- Session storage: the entire Account object (including the raw AccessToken) is JSON-stored in
+  localStorage under "tausend-admin-session", unencrypted, no expiry tracking.
+- NO REFRESH TOKEN HANDLING. Account.RefreshToken is fetched and stored but never used --
+  there's no refreshAccessToken() call anywhere in the dashboard (the mobile app has this; the
+  dashboard does not). When the AccessToken naturally expires server-side, every page's
+  UNAUTHORIZED handling correctly detects it and force-logs-out back to /login (see AccountsPage,
+  DevicesPage, DeviceUsersPage, AuditLogPage -- all four independently implement this same
+  check), but the admin then has to fully re-enter credentials rather than silently refreshing.
+  This is a real architectural gap, not a bug -- refresh was simply never wired up.
+- No "remember me," no password reset flow, no MFA -- login is email+password only, matching
+  the same AccountService/Login the mobile app uses (no admin-specific auth flow exists).
+
+
+5. DATA LAYER
+===================================================================
+src/api/client.ts   -- apiPost<T>(path, body): thin fetch wrapper, POST + JSON, no auth
+                        interceptor (unlike mobile's client.ts, which auto-injects AccessToken
+                        via a module-level setAccessToken()/getAccessToken() pair). Here, EVERY
+                        call site manually threads session.account.AccessToken through by hand.
+                        This is a real duplication smell -- if you compare AccountsPage,
+                        DevicesPage, DeviceUsersPage, AuditLogPage, all four repeat the exact
+                        same "pass token, check UNAUTHORIZED, logout+navigate on failure"
+                        boilerplate independently. A shared authenticated-fetch hook (mirroring
+                        mobile's interceptor pattern) would remove this duplication.
+src/api/auth.ts     -- login() only
+src/api/admin.ts    -- the 7 AdminController endpoints: enumAllAccounts, enumAllDevices,
+                        setAccountRole, blockDeviceAsAdmin, resetDeviceAsAdmin,
+                        disassociateDeviceAsAdmin, enumAuditLog
+src/api/device.ts   -- enumUsers, createUsers (PIN-holder labels on a specific panel, admin-
+                        scoped variant of the same endpoints the mobile app's PanelUsersScreen
+                        calls)
+src/api/wcfDate.ts  -- parses the backend's date string format
+src/api/types.ts    -- hand-maintained TS mirrors of the backend's response shapes (no codegen,
+                        kept in sync by hand -- same approach as the mobile app's api/types.ts)
+
+There is no caching layer (no React Query / SWR / RTK Query) -- every page does its own
+useEffect + useState + manual refetch-after-mutation (see DevicesPage's load() being called
+again after every successful action). No loading skeletons, no optimistic updates, no
+background refresh/polling -- everything is a one-shot fetch on mount.
+
+
+6. PAGE-BY-PAGE FEATURE INVENTORY
+===================================================================
+
+LoginPage
+  - Email/password form -> AccountService/Login -> role-gate check -> redirect to /accounts
+  - No "forgot password" link, no branding beyond a plain white card with "Tausend Admin" text
+
+DashboardLayout (shell)
+  - Fixed sidebar (Accounts / Devices / Audit log links) + topbar (signed-in-as email, logout)
+  - No breadcrumbs, no page title beyond each page's own <h1>, no responsive/mobile layout
+    considerations evident from the CSS
+
+AccountsPage  (satisfies Day 7 AM "fleet view" partially + Day 8 AM "role assignment UI")
+  - Table: Name, Email, Role (with an inline <select> to change it), Status (Enabled/Disabled),
+    Created date
+  - Client-side search by name/email (no server-side search -- enumAllAccounts returns
+    EVERYTHING, filtering happens in the browser)
+  - Role change: window.confirm() dialog -> setAccountRole -> optimistic local state update
+  - NO pagination -- if the fleet grows to thousands of accounts, this loads and renders all of
+    them at once
+  - NO way to see which devices an account owns from this screen
+  - NO way to disable/enable an account, reset a password, or delete an account -- "Status"
+    (Enabled/Disabled) is DISPLAYED but there's no backend endpoint or UI control to change it
+  - NO account detail view/drawer -- it's a flat table, nothing is clickable except the role
+    dropdown
+
+DevicesPage  (satisfies Day 7 AM "fleet view" + Day 8 AM "wire block-PIN/disassociate actions")
+  - Table: Description, Identifier, Status, Online/Offline, Last connection, Created, a "Manage
+    users" link, and three action buttons (Block PIN / Reset PIN / Disassociate), each behind a
+    window.confirm()
+  - Client-side search by description/identifier, same "loads everything, filters client-side"
+    pattern as AccountsPage
+  - NO visibility into WHICH accounts own/have linked a given device -- an admin troubleshooting
+    "why can't this customer see their panel" has no way to see the account<->device
+    relationship from here at all
+  - NO live panel data -- no zones, no arm/disarm status, no battery, no fault flags, no event
+    history for a device. Everything the mobile app itself can show about a panel's live state
+    is invisible from the admin side; the dashboard only ever shows metadata rows from the
+    Devices table, never queries the panel live the way CommandController does
+  - "Manage users" only reaches PIN-holder LABEL management (see DeviceUsersPage below), not
+    account-device linkage
+
+DeviceUsersPage  (satisfies Day 7 PM "cross-fleet user management screen" -- see note below)
+  - Table of PanelUser rows (UserNumber -> UserName labels) for one device, plus a form to
+    add/edit one at a time
+  - IMPORTANT NAMING AMBIGUITY: this manages PIN-HOLDER LABELS on a panel (the same concept as
+    the mobile app's PanelUsersScreen -- "user 3 = Housekeeper"), NOT which real Accounts
+    (logins) have access to that device. If the schedule's "cross-fleet user management" was
+    understood by the client as "see/manage which customer accounts are linked to which
+    panels," that's a DIFFERENT feature that doesn't exist anywhere in the dashboard. Worth
+    clarifying which was actually meant, since both are legitimately called "user management"
+    but only one is built.
+  - No delete -- consistent with the mobile app, removing a label means saving it with an empty
+    name (there's no DELETE endpoint on the backend for this)
+
+AuditLogPage  (satisfies Day 8 PM "audit trail")
+  - Table: When, Actor (email or "Account #N" fallback), Action (mapped to a friendly label for
+    4 known action types), Target, Details
+  - Backend caps this at the last 200 entries (EnumAuditLog) -- no pagination, no date-range
+    filter, no filter by actor/action/target, no search at all
+  - Only 4 action types have friendly labels (SetAccountRole, BlockDevice, ResetDevice,
+    DisassociateDevice) -- matches exactly the 4 mutating AdminService actions that exist, so
+    this is complete for what the backend currently logs, but will silently show raw action
+    strings for anything added later unless this map is kept in sync
+
+
+7. SCHEDULE REQUIREMENTS -- LITERAL COVERAGE CHECK
+===================================================================
+Day 6 AM  Dashboard scaffold, routing, design shell           DONE (App.tsx, DashboardLayout)
+Day 6 PM  Admin auth screen wired to the roles model           DONE (LoginPage, RequireAdmin)
+Day 7 AM  Fleet view -- all panels/devices, search/filter       DONE (DevicesPage)
+Day 7 PM  Cross-fleet user management screen                   DONE, but see naming ambiguity
+                                                                 above -- PIN-holder labels only
+Day 8 AM  Role assignment UI; block-PIN/disassociate wiring     DONE (AccountsPage, DevicesPage)
+Day 8 PM  Audit trail                                           DONE (AuditLogPage)
+Day 8 PM  "Dashboard QA pass"                                   NOT DOCUMENTED -- no equivalent
+                                                                 of mobile's QA_CHECKLIST.md /
+                                                                 DAY26_REGRESSION.md exists for
+                                                                 the dashboard specifically
+
+Every literal line item has a corresponding screen and a working backend call. This is why the
+project could reasonably be marked "Phase 3 complete" against the schedule as written. The gap
+is between "every line item has an implementation" and "this feels like a complete admin
+product" -- the schedule described WHAT screens to build in three days, not how deep each one
+should go, and three days is genuinely enough time only for the minimum viable version of each.
+
+
+8. CONCRETE GAPS -- WHAT WOULD MAKE THIS FEEL LESS SIMPLE
+===================================================================
+In rough priority order, based on what a real fleet-management admin tool for this kind of
+product typically needs:
+
+1. An actual overview/home page -- KPI cards (total accounts, total devices, online/offline
+   count, accounts by role, recent audit activity), not a redirect straight into a raw table.
+2. Account <-> Device linkage visibility -- from an account, see which devices it owns; from a
+   device, see which accounts have it linked. Currently impossible in either direction.
+3. Live panel diagnostics on DevicesPage -- at minimum, surface the same status/battery/fault
+   data CommandController already exposes, so support staff don't need the customer's own phone
+   to see what's wrong with a panel.
+4. Pagination and server-side search/filter -- AccountsPage, DevicesPage, and AuditLogPage all
+   load their entire dataset in one call and filter client-side. Fine at today's fleet size,
+   will not scale.
+5. Session refresh -- wire up the already-available RefreshToken instead of forcing a full
+   re-login on every AccessToken expiry.
+6. A shared authenticated-fetch layer -- remove the duplicated "pass token manually, check
+   UNAUTHORIZED, logout+navigate" boilerplate repeated across all four data pages.
+7. Account management depth -- enable/disable, password reset trigger, account detail view.
+   "Status: Enabled/Disabled" is displayed today with no way to act on it.
+8. Sortable table columns.
+9. A dashboard-specific QA pass and written checklist, matching the rigor already applied to
+   the mobile app (QA_CHECKLIST.md, DAY26_REGRESSION.md, DAY27_DEVICE_MATRIX.md have no
+   dashboard equivalent).
+10. Visual polish -- the current styling is plain, functional, hand-written CSS with no design
+    system; a real "dashboard" feel usually implies some visual hierarchy/data-viz beyond plain
+    HTML tables.
+
+None of the above were literally asked for by the 30-day schedule's three-day Phase 3 window --
+they're what's typically expected of an "admin dashboard" as a product category, which the
+schedule's line items only partially capture. Worth discussing with the client which of these
+(if any) are actually wanted before building further, since scope beyond the original schedule
+is exactly the kind of thing that needs to be agreed on explicitly rather than assumed.

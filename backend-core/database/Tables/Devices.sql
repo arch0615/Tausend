@@ -1,0 +1,15 @@
+﻿CREATE TABLE [dbo].[Devices]
+(
+	[DeviceId] BIGINT NOT NULL PRIMARY KEY IDENTITY(1,1),
+	Description NVARCHAR(255) NOT NULL,
+	IP NVARCHAR(255) NULL,
+	Port NVARCHAR(8) NULL,
+	[Identifier] NVARCHAR(255) NOT NULL,
+	[Enabled] BIT NOT NULL, 
+	IsOnline BIT NOT NULL,
+	LastConnection DATETIME NULL,
+	CreatedDateTime DATETIME NOT NULL,
+	DeletedDateTime DATETIME NULL, 
+    UpdatedDateTime DATETIME NOT NULL,
+	PublicKey INT NULL
+)

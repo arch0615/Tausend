@@ -1,0 +1,6 @@
+﻿CREATE PROCEDURE [dbo].[GetDevicePIN]
+	@DeviceId BIGINT
+AS BEGIN
+	SET NOCOUNT ON
+	SELECT ISNULL(PIN,'') FROM AccountDevicePins WHERE DeviceId = @DeviceId;
+END

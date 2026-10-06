@@ -1,0 +1,7 @@
+CREATE TABLE [dbo].[Zones]
+(
+	[ZoneId] BIGINT NOT NULL PRIMARY KEY IDENTITY(1,1),
+	[DeviceId] BIGINT NOT NULL REFERENCES Devices(DeviceId),
+	[Zone] INT NOT NULL,
+	[Name] NVARCHAR(100) NOT NULL
+)

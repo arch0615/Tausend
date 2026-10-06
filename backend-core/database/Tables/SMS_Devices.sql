@@ -1,0 +1,13 @@
+﻿CREATE TABLE [dbo].[SMS_Devices]
+(
+	[DeviceId] BIGINT NOT NULL PRIMARY KEY IDENTITY(1,1),
+	[AccountId] BIGINT NOT NULL,
+	[Description] NVARCHAR(255) NOT NULL,
+	[Identifier] NVARCHAR(255) NOT NULL, 
+	[Device_PIN] NVARCHAR(4) NOT NULL,
+	[SIM_PIN] NVARCHAR(4) NOT NULL,
+	[PhoneNumber] NVARCHAR(30) NOT NULL,
+    [DeviceType] NVARCHAR(20) NOT NULL,
+    [CreatedDateTime] DATETIME NOT NULL, 
+    [UpdateDateTime] DATETIME NOT NULL, 
+)

@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Operations Version="1.0" xmlns="http://schemas.microsoft.com/sqlserver/dac/Serialization/2012/02">
+  <Operation Name="Rename Refactor" Key="cbcef8a2-b262-4c77-b589-2310ebb4fa87" ChangeDateTime="10/28/2022 19:45:46">
+    <Property Name="ElementName" Value="[dbo].[SMS_Devices].[Id]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[SMS_Devices]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="DeviceId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="c36f3ca5-9fbc-49fd-92f3-04a067b3daf7" ChangeDateTime="10/28/2022 20:08:15">
+    <Property Name="ElementName" Value="[dbo].[SMS_Devices].[CentralTime]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[SMS_Devices]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="DeviceType" />
+  </Operation>
+</Operations>

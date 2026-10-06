@@ -1,0 +1,19 @@
+[Unit]
+Description=Tausend Relay (panel UDP listener + PrivateService)
+After=network.target tausend-backend.service
+Wants=tausend-backend.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/tausend/relay
+ExecStart=/usr/bin/dotnet /opt/tausend/relay/TausendRelay.dll
+Restart=on-failure
+RestartSec=5
+User=tausend
+Environment=ASPNETCORE_ENVIRONMENT=Production
+# UDP:Port (default 10000, see appsettings.json) must be reachable from the internet -- alarm
+# panels connect to it directly. PrivateServiceBindAddress defaults to 127.0.0.1 and should stay
+# that way; it's only ever called by TausendBackend.Api on the same box.
+
+[Install]
+WantedBy=multi-user.target

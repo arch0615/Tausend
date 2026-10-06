@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!--
+  Copy this file to ConnectionStrings.config (gitignored) and fill in the real values.
+  ConnectionStrings.config must exist alongside Web.config on any machine actually
+  running the app -- it is intentionally not committed.
+-->
+<connectionStrings>
+  <add name="TausendConnectionString" connectionString="Data Source=YOUR_SQL_HOST,YOUR_SQL_PORT;Initial Catalog=Tausend;User ID=YOUR_USER;Password=YOUR_PASSWORD" providerName="System.Data.SqlClient"/>
+</connectionStrings>

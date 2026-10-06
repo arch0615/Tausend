@@ -1,0 +1,69 @@
+:root {
+  --bg: #f4f3ee;
+  --panel: #ffffff;
+  --ink: #1c1b18;
+  --ink-dim: #6b6659;
+  --line: #ddd8cb;
+  --accent: #1f6f5c;
+  --accent-ink: #ffffff;
+  --danger: #a3242c;
+  --danger-bg: #fbe6e4;
+  --ok-bg: #e2efe4;
+  --ok-ink: #2f6b4a;
+
+  color-scheme: light dark;
+  font: 15px/1.5 -apple-system, 'Segoe UI', system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15171a;
+    --panel: #1e2023;
+    --ink: #e9e6da;
+    --ink-dim: #9b9585;
+    --line: #2c302c;
+    --accent: #4fd8ab;
+    --accent-ink: #062017;
+    --danger: #f0787c;
+    --danger-bg: #3a1f20;
+    --ok-bg: #163329;
+    --ok-ink: #7fd6a2;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+input {
+  font: inherit;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.pill {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 2px 8px;
+  border-radius: 20px;
+}

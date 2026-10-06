@@ -1,0 +1,135 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Name>TausendDB</Name>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>4.1</ProjectVersion>
+    <ProjectGuid>{f8461e89-3d7a-4600-93a8-d8ff0faf7d5f}</ProjectGuid>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql130DatabaseSchemaProvider</DSP>
+    <OutputType>Database</OutputType>
+    <RootPath />
+    <RootNamespace>TausendDB</RootNamespace>
+    <AssemblyName>TausendDB</AssemblyName>
+    <ModelCollation>1033, CI</ModelCollation>
+    <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
+    <DeployToDatabase>True</DeployToDatabase>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetLanguage>CS</TargetLanguage>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <SqlServerVerification>False</SqlServerVerification>
+    <IncludeCompositeObjects>True</IncludeCompositeObjects>
+    <TargetDatabaseSet>True</TargetDatabaseSet>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">11.0</VisualStudioVersion>
+    <SSDTExists Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')">True</SSDTExists>
+    <VisualStudioVersion Condition="'$(SSDTExists)' == ''">11.0</VisualStudioVersion>
+  </PropertyGroup>
+  <Import Condition="'$(SQLDBExtensionsRefPath)' != ''" Project="$(SQLDBExtensionsRefPath)\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <ItemGroup>
+    <Folder Include="Properties" />
+    <Folder Include="Tables" />
+    <Folder Include="StoredProcedures" />
+    <Folder Include="Functions" />
+    <Folder Include="StoredProcedures\Accounts" />
+    <Folder Include="StoredProcedures\Devices" />
+    <Folder Include="StoredProcedures\DeviceTokens" />
+    <Folder Include="StoredProcedures\Zones" />
+    <Folder Include="Types" />
+    <Folder Include="StoredProcedures\Events" />
+    <Folder Include="StoredProcedures\Exclusions" />
+    <Folder Include="StoredProcedures\ProgramControl" />
+    <Folder Include="StoredProcedures\Users" />
+  </ItemGroup>
+  <ItemGroup>
+    <Build Include="Tables\Accounts.sql" />
+    <Build Include="Tables\AccessTokens.sql" />
+    <Build Include="Tables\Devices.sql" />
+    <Build Include="Tables\AccountDevicePins.sql" />
+    <Build Include="StoredProcedures\Accounts\CreateAccount.sql" />
+    <Build Include="StoredProcedures\Devices\CreateDevice.sql" />
+    <Build Include="StoredProcedures\Accounts\LoginUser.sql" />
+    <Build Include="StoredProcedures\Accounts\DeleteAccount.sql" />
+    <Build Include="StoredProcedures\Devices\UpdateDeviceConnectionParameters.sql" />
+    <Build Include="StoredProcedures\Devices\UpdateDeviceLastConnection.sql" />
+    <Build Include="StoredProcedures\Devices\DeleteDevice.sql" />
+    <Build Include="StoredProcedures\Devices\GetDevice.sql" />
+    <Build Include="StoredProcedures\Devices\GetDeviceByIdentifier.sql" />
+    <Build Include="StoredProcedures\Accounts\GetAccount.sql" />
+    <Build Include="StoredProcedures\Accounts\UpdateAccount.sql" />
+    <Build Include="StoredProcedures\Devices\UpdateDevice.sql" />
+    <Build Include="StoredProcedures\Accounts\UpdateAccountPassword.sql" />
+    <Build Include="Tables\AccountDeviceTokens.sql" />
+    <Build Include="StoredProcedures\DeviceTokens\CreateDeviceToken.sql" />
+    <Build Include="StoredProcedures\DeviceTokens\DeleteDeviceToken.sql" />
+    <Build Include="StoredProcedures\Accounts\EnumOwnersOfDevice.sql" />
+    <Build Include="StoredProcedures\Accounts\EnumDeviceTokensOfAccount.sql" />
+    <Build Include="StoredProcedures\Zones\CreateZone.sql" />
+    <Build Include="StoredProcedures\Zones\EnumZones.sql" />
+    <Build Include="Tables\Zones.sql" />
+    <Build Include="Types\ZoneType.sql" />
+    <Build Include="Tables\Events.sql" />
+    <Build Include="StoredProcedures\Events\CreateEvent.sql" />
+    <Build Include="Types\EventType.sql" />
+    <Build Include="StoredProcedures\Events\EnumEvents.sql" />
+    <Build Include="StoredProcedures\Exclusions\CreateExclusions.sql" />
+    <Build Include="StoredProcedures\Exclusions\EnumExclusions.sql" />
+    <Build Include="StoredProcedures\ProgramControl\CreateProgramControl.sql" />
+    <Build Include="StoredProcedures\ProgramControl\EnumProgramControls.sql" />
+    <Build Include="Tables\ProgramControl.sql" />
+    <Build Include="Tables\Exclusions.sql" />
+    <Build Include="Types\ProgramControlType.sql" />
+    <Build Include="Types\ExclusionType.sql" />
+    <Build Include="StoredProcedures\Accounts\ValidateAccessToken.sql" />
+    <Build Include="StoredProcedures\Users\CreateUserTag.sql" />
+    <Build Include="StoredProcedures\Users\EnumUserTags.sql" />
+    <Build Include="StoredProcedures\Users\GetUserTag.sql" />
+    <Build Include="Tables\UserTags.sql" />
+    <Build Include="Types\UserTagType.sql" />
+    <Build Include="StoredProcedures\Accounts\Logout.sql" />
+    <Build Include="StoredProcedures\Devices\GetDeviceByIdentifier2.sql" />
+    <Build Include="StoredProcedures\Accounts\CheckPinUsage.sql" />
+    <Build Include="StoredProcedures\Devices\ResetDevice.sql" />
+    <Build Include="StoredProcedures\Devices\BlockDevice.sql" />
+    <Build Include="StoredProcedures\Accounts\DeleteAccountDevice.sql" />
+    <Build Include="Tables\SMS_Devices.sql" />
+    <Build Include="StoredProcedures\Devices\CreateDeviceSMS.sql" />
+    <Build Include="StoredProcedures\Devices\UpdateDeviceSMS.sql" />
+    <Build Include="StoredProcedures\Devices\DeleteDeviceSMS.sql" />
+    <Build Include="StoredProcedures\Devices\GetDevicePIN.sql" />
+    <Build Include="StoredProcedures\Devices\DisassociateCentral.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SqlSchemaCompare1.scmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <RefactorLog Include="TausendDB.refactorlog" />
+  </ItemGroup>
+</Project>

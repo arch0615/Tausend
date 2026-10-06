@@ -1,0 +1,26 @@
+buildscript {
+    ext {
+        buildToolsVersion = "36.0.0"
+        minSdkVersion = 24
+        compileSdkVersion = 36
+        targetSdkVersion = 36
+        ndkVersion = "27.1.12297006"
+        kotlinVersion = "2.1.20"
+    }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle")
+        classpath("com.facebook.react:react-native-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+        // Reads android/app/google-services.json and generates the resources @react-native-firebase
+        // needs at build time. That file is gitignored (see mobile/.gitignore, real API key inside)
+        // -- a fresh checkout needs its own copy in place at android/app/google-services.json or
+        // this plugin fails the build outright (it errors if the file is missing, doesn't skip).
+        classpath("com.google.gms:google-services:4.4.2")
+    }
+}
+
+apply plugin: "com.facebook.react.rootproject"
