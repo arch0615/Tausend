@@ -11,7 +11,11 @@ AS BEGIN
 		@ResetToken UNIQUEIDENTIFIER,
 		@CurrentUTCDateTime DATETIME
 
-	SELECT @AccountId = AccountId FROM Accounts WHERE Email = @Email AND [Enabled] = 1
+	-- TOP 1 + ORDER BY for the same reason as GetLoginCredentials: one address can still map to
+	-- more than one row on databases that predate the DeleteAccount tombstone fix.
+	SELECT TOP 1 @AccountId = AccountId FROM Accounts
+		WHERE Email = @Email AND [Enabled] = 1
+		ORDER BY AccountId DESC
 
 	IF ISNULL(@AccountId, 0) = 0 BEGIN
 		SELECT CAST(-1 AS BIGINT) AS AccountId, CAST(NULL AS CHAR(36)) AS ResetToken, CAST(NULL AS NVARCHAR(255)) AS Email, CAST(NULL AS NVARCHAR(100)) AS FirstName

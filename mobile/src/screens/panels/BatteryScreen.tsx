@@ -69,7 +69,7 @@ export function BatteryScreen({ navigation }: Props) {
   if (!deviceId) {
     return (
       <GradientBackground style={styles.centered}>
-        <Text style={[typography.bodyDim, { color: colors.onDarkDim }]}>{t('Select a Wi-Fi panel to view its battery status.')}</Text>
+        <Text style={[typography.bodyDim, { color: colors.onDarkDim }]}>{t('Select an IP panel to view its battery status.')}</Text>
       </GradientBackground>
     );
   }

@@ -23,6 +23,7 @@ namespace TausendBackend.Api.Controllers
         private readonly NotificationBusiness _notificationBusiness;
         private readonly ScheduledPgmActionBusiness _scheduledPgmActionBusiness;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<DeviceController> _logger;
 
         public DeviceController(
             DeviceBusiness deviceBusiness,
@@ -34,7 +35,8 @@ namespace TausendBackend.Api.Controllers
             UserBusiness userBusiness,
             NotificationBusiness notificationBusiness,
             ScheduledPgmActionBusiness scheduledPgmActionBusiness,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ILogger<DeviceController> logger)
         {
             _deviceBusiness = deviceBusiness;
             _accountBusiness = accountBusiness;
@@ -46,6 +48,7 @@ namespace TausendBackend.Api.Controllers
             _scheduledPgmActionBusiness = scheduledPgmActionBusiness;
             _notificationBusiness = notificationBusiness;
             _configuration = configuration;
+            _logger = logger;
         }
 
         [HttpPost("CreateDevice")]
@@ -63,7 +66,23 @@ namespace TausendBackend.Api.Controllers
                 var created = _deviceBusiness.CreateDevice(request.AccessToken, request.Description, request.Identifier, request.Pin);
                 if (created.Code == 0)
                 {
-                    SendDeviceConnectedNotification(request.Identifier, request.Email);
+                    // Must never fail the request: by this point the device row and the account
+                    // link are already committed, so letting this throw returned an error for a
+                    // pairing that actually succeeded. The user then retried and got "Dispositivo
+                    // con descripcion repetida" against the device they had just created without
+                    // knowing it -- the client's issue #15, on an account they were sure had no
+                    // panels. Two real ways this throws today: TimeZoneInfo.FindSystemTimeZoneById
+                    // has no tzdata on a slim Linux image, and the FCM OAuth step opens
+                    // Firebase:CredentialsPath, which points at a file that does not exist yet
+                    // (see mobile/src/notifications/README.md) and rethrows when it is missing.
+                    try
+                    {
+                        SendDeviceConnectedNotification(request.Identifier, request.Email);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogWarning(e, "Device {Identifier} was created but its 'device connected' notification could not be sent.", request.Identifier);
+                    }
                 }
                 return created;
             }

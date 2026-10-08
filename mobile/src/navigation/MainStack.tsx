@@ -41,6 +41,16 @@ export function MainStack() {
   return (
     <>
     <Stack.Navigator
+      // Reset on every screen focus. This menu's Modal is a sibling of the navigator, so a
+      // dismissal that doesn't round-trip through onClose (the modal window being torn down
+      // underneath a native-stack transition, which is what MainMenu.go does: it calls onClose
+      // and navigates in the same tick) left menuOpen stuck at true with nothing on screen.
+      // The header button then called setMenuOpen(true) on an already-true state, which is not
+      // a state change, so nothing re-rendered and the button looked permanently dead on every
+      // stack screen -- while Home kept working because HomeScreen holds its own separate
+      // menuOpen. That is the client's point 1 ("only the back arrow responds", "always when it
+      // was on the right side": the right-hand header button is this one, Home's is its own).
+      screenListeners={{ focus: () => setMenuOpen(false) }}
       screenOptions={{
         headerStyle: { backgroundColor: colors.headerBg },
         headerTintColor: colors.headerInk,
@@ -51,7 +61,9 @@ export function MainStack() {
         // every section is one tap away from anywhere, not just from Home. Kept on the right
         // (legacy's was top-left) so it never displaces the native back button on the left,
         // which most sub-screens here still rely on instead of an in-content Back button.
-        headerRight: () => <MenuButton onPress={() => setMenuOpen(true)} />,
+        // Toggles rather than forcing true, so even if the state ever desyncs from what's on
+        // screen the next tap always changes it instead of being swallowed.
+        headerRight: () => <MenuButton onPress={() => setMenuOpen(open => !open)} />,
       }}
     >
       {/*

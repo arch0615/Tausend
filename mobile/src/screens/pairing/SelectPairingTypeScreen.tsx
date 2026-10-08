@@ -26,13 +26,13 @@ export function SelectPairingTypeScreen({ navigation }: Props) {
           Ported from setup.page.ts's handleCreate('ip'), which reveals the create form directly
           with no Wi-Fi step involved; this used to route into that wizard by mistake, leaving no
           way to actually register a panel once it already had Wi-Fi configured. */}
-      <PrimaryButton title={t('Wi-Fi panel')} onPress={() => navigation.navigate('CreateDevice')} />
+      <PrimaryButton title={t('IP panel')} onPress={() => navigation.navigate('CreateDevice')} />
       <View style={{ height: spacing.md }} />
       <PrimaryButton title={t('SMS panel')} onPress={() => navigation.navigate('SmsPairing')} />
 
       <Text style={[typography.bodyDim, { color: colors.onDarkDim, marginTop: spacing.xl }]}>
         {t(
-          "Wi-Fi panels connect to your home network and are controlled over the internet. SMS panels have no Wi-Fi and are controlled by text message to a SIM card in the panel.",
+          "IP panels connect to the app's server through your home Wi-Fi network and/or the mobile data of the alarm's cellular line. SMS panels do not use a server connection and are controlled by text messages between the users' phones and the alarm's cellular line.",
         )}
       </Text>
     </ScrollView>

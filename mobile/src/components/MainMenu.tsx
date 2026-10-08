@@ -4,7 +4,6 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useLocale } from '../i18n/LocaleContext';
 import { useAuth } from '../auth/AuthContext';
 import { usePanels } from '../panels/PanelContext';
-import { AccountRole } from '../api/types';
 import { ListGroup, ListRow } from './ListRow';
 
 const APP_VERSION = '1.0';
@@ -43,16 +42,21 @@ export function MainMenu({ visible, onClose }: { visible: boolean; onClose: () =
   const { colors, typography, spacing, radius } = useTheme();
   const { t } = useLocale();
   const navigation = useNavigation();
-  const { session, logout } = useAuth();
+  const { logout } = useAuth();
   const { panels, selected } = usePanels();
-  const role = session?.account.Role;
-  const isInstaller = role === AccountRole.Installer || role === AccountRole.Admin;
 
   function go(screen: string, params?: object) {
     onClose();
-    // MainStack's own param list types this precisely at each call site (ListRow.onPress);
-    // this helper is shared across many destinations so it stays loosely typed here.
-    (navigation as any).navigate(screen, params);
+    // Deferred by one frame rather than navigating in the same tick as the close. Starting a
+    // native-stack transition while this Modal is still dismissing races the modal's own window
+    // teardown on Android, which is what left the menu state and what's actually on screen out
+    // of sync (see MainStack's screenListeners comment). Letting the close commit first removes
+    // the race instead of only recovering from it.
+    requestAnimationFrame(() => {
+      // MainStack's own param list types this precisely at each call site (ListRow.onPress);
+      // this helper is shared across many destinations so it stays loosely typed here.
+      (navigation as any).navigate(screen, params);
+    });
   }
 
   return (
@@ -89,7 +93,6 @@ export function MainMenu({ visible, onClose }: { visible: boolean; onClose: () =
                 <ListRow icon="⚠" iconColor={colors.danger} label={t('Failures')} onPress={() => go('Failures')} />
                 <ListRow icon="≡" iconColor={ICON_COLORS.violet} label={t('Events')} onPress={() => go('Events')} />
                 <ListRow icon="⏻" iconColor={ICON_COLORS.orange} label={t('PGM outputs')} onPress={() => go('Pgm')} />
-                <ListRow icon="🗓" iconColor={ICON_COLORS.cyan} label={t('Scheduled departures')} onPress={() => go('ScheduledDepartures')} />
                 <ListRow icon="👤" iconColor={ICON_COLORS.pink} label={t('User labels')} onPress={() => go('PanelUsers')} />
                 <ListRow icon="🕐" iconColor={ICON_COLORS.indigo} label={t('Clock')} onPress={() => go('Clock')} />
                 <ListRow icon="🔋" iconColor={ICON_COLORS.lime} label={t('Battery')} onPress={() => go('Battery')} />
@@ -107,7 +110,7 @@ export function MainMenu({ visible, onClose }: { visible: boolean; onClose: () =
             {panels.length > 0 && (
               <ListRow icon="🔖" iconColor={ICON_COLORS.violet} label={t('Device selector')} onPress={() => go('PanelSelector')} />
             )}
-            {isInstaller && <ListRow icon="🔧" iconColor={ICON_COLORS.slate} label={t('Installer mode')} onPress={() => go('InstallerMode')} />}
+            <ListRow icon="🔧" iconColor={ICON_COLORS.slate} label={t('Installer mode')} onPress={() => go('InstallerMode')} />
             {selected && (
               <ListRow
                 icon="⎋"

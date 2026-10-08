@@ -80,7 +80,7 @@ export function FailuresScreen({ navigation }: Props) {
   if (!deviceId) {
     return (
       <GradientBackground style={styles.centered}>
-        <Text style={[typography.bodyDim, { color: colors.onDarkDim }]}>{t('Select a Wi-Fi panel to view its failures.')}</Text>
+        <Text style={[typography.bodyDim, { color: colors.onDarkDim }]}>{t('Select an IP panel to view its failures.')}</Text>
       </GradientBackground>
     );
   }

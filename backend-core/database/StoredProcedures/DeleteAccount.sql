@@ -9,7 +9,27 @@ AS BEGIN
 	SELECT @AccountId = AccountId FROM AccessTokens WHERE AccessToken = @TokenGuid
 	DELETE FROM AccessTokens WHERE AccountID = @AccountId
 
-	UPDATE Accounts Set Enabled = 0, DeletedDateTime = GETUTCDATE() FROM Accounts WHERE AccountId = @AccountId
+	-- Deleting is a soft delete (the row stays for audit/event history), but the email address
+	-- must NOT stay reserved by it. Accounts.Email has no unique constraint, so leaving the
+	-- address on a disabled row meant a later CreateAccount inserted a SECOND row for the same
+	-- address, after which GetLoginCredentials resolved the older disabled row and the address
+	-- was locked out permanently: registration said "already exists", login failed, and password
+	-- recovery (which filters on Enabled = 1) never issued a token. Tombstoning the address here
+	-- frees it immediately and keeps the historical row intact and identifiable.
+	-- Admin suspension (SetAccountEnabled) deliberately does NOT do this: it leaves
+	-- DeletedDateTime NULL, so a suspended account keeps its address reserved.
+	UPDATE Accounts
+	SET [Enabled] = 0,
+		DeletedDateTime = GETUTCDATE(),
+		UpdatedDateTime = GETUTCDATE(),
+		Email = LEFT(CONCAT('deleted+', CAST(@AccountId AS NVARCHAR(20)), '+', Email), 255)
+	WHERE AccountId = @AccountId AND Email NOT LIKE 'deleted+%'
+
+	-- Anything that could still authenticate as the old account goes with it.
+	DELETE FROM AccountDeviceTokens WHERE AccountId = @AccountId
+	DELETE FROM PasswordResetTokens WHERE AccountID = @AccountId
+	UPDATE RefreshTokens SET RevokedDateTime = GETUTCDATE()
+		WHERE AccountId = @AccountId AND RevokedDateTime IS NULL
 
 	-- Unlink every panel this account has, not just one -- the previous single-@DeviceId lookup
 	-- (no TOP/ORDER BY, so it picked an arbitrary row) silently left any additional linked

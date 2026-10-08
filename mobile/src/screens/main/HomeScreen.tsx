@@ -137,6 +137,7 @@ function IpHome({
   const { colors, typography, spacing, radius } = useTheme();
   const { t } = useLocale();
   const { logout } = useAuth();
+  const { reachabilityOf, reportReachability } = usePanels();
   const [status, setStatus] = useState<ParsedStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -175,11 +176,17 @@ function IpHome({
     if (!lastResponse) {
       setError(lastException ? describeCommandException(lastException, t) : t("The panel isn't responding -- it may be offline."));
       setStatus(null);
+      // Every retry above is exhausted at this point, so this is a real "cannot reach it", not a
+      // single dropped packet. See PanelContext.reportReachability for why the connection
+      // indicator can't just keep trusting the login-time flag.
+      reportReachability('ip', deviceIdRef.current, false);
       return;
     }
     setError(null);
     setStatus(parseStatus(lastResponse.Text ?? ''));
-  }, [logout, t]);
+    // A parseable reply is proof the panel is reachable right now.
+    reportReachability('ip', deviceIdRef.current, true);
+  }, [logout, t, reportReachability]);
 
   useFocusEffect(
     useCallback(() => {
@@ -317,12 +324,20 @@ function IpHome({
         refreshing={loading}
       />
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md }}>
-        <StatusDot color={isOnline ? colors.okInk : colors.onDarkDim} size={7} />
-        <Text style={[typography.bodyDim, { color: colors.onDarkDim, marginLeft: spacing.xs }]}>
-          {isOnline ? t('Connected') : t('Not connected')}
-        </Text>
-      </View>
+      {/* Live reachability wins; `isOnline` (the login-time database flag) is only a placeholder
+          for the moment before the first status poll comes back. */}
+      {(() => {
+        const live = reachabilityOf('ip', deviceId);
+        const connected = live === 'unknown' ? !!isOnline : live === 'online';
+        return (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md }}>
+            <StatusDot color={connected ? colors.okInk : colors.onDarkDim} size={7} />
+            <Text style={[typography.bodyDim, { color: colors.onDarkDim, marginLeft: spacing.xs }]}>
+              {connected ? t('Connected') : t('Not connected')}
+            </Text>
+          </View>
+        );
+      })()}
 
       {error && <Banner kind="error">{error}</Banner>}
 

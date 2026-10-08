@@ -197,7 +197,13 @@ namespace TausendBackend.Api.Migrations
                         RETURN 0
                     END
 
-                    SELECT @Val = ISNULL(D.DeviceId, 0) FROM Devices D, AccountDevicePins ADP WHERE D.Description = @Description AND ADP.DeviceId = D.DeviceId AND AccountId = @AccountId
+                    -- D.Enabled = 1: without it, a panel this account deleted or had disabled still reserved
+                    -- its description forever. The account's own panel list is built with an
+                    -- Enabled = 1 join (see CreateLoginSession), so the device was invisible in the
+                    -- app while still blocking its name here -- the client's issue #15, reported as
+                    -- "descripcion repetida" on an account with no panels at all.
+                    SELECT @Val = ISNULL(D.DeviceId, 0) FROM Devices D, AccountDevicePins ADP
+                        WHERE D.Description = @Description AND ADP.DeviceId = D.DeviceId AND ADP.AccountId = @AccountId AND D.Enabled = 1
 
                     IF @Val > 0 BEGIN
                         SELECT CAST(-2 AS BIGINT)
@@ -224,6 +230,17 @@ namespace TausendBackend.Api.Migrations
             // The previous single-@DeviceId lookup (no TOP/ORDER BY) only unlinked one arbitrary
             // panel on account deletion -- an account with more than one linked panel left the
             // rest orphaned to a disabled account. Now unlinks every linked device, set-based.
+            //
+            // Also frees the email address. Deleting stays a soft delete (the row is kept for
+            // audit/event history), but Accounts.Email has no unique constraint, so leaving the
+            // address sitting on a disabled row meant a later CreateAccount inserted a SECOND row
+            // for the same address. From then on GetLoginCredentials resolved the older, disabled
+            // row and the address was dead: registration reported "already exists", login failed,
+            // and password recovery (filtered on Enabled = 1) never issued a token. Reported by
+            // the client as point 14, with prueba@ and diego@alarmastausend.com stuck that way.
+            // Tombstoning the address here frees it immediately and keeps the historical row.
+            // Admin suspension (SetAccountEnabled) deliberately does NOT tombstone: it leaves
+            // DeletedDateTime NULL, so a suspended account keeps its address reserved.
             """
             CREATE OR ALTER PROCEDURE [dbo].[DeleteAccount]
                 @AccessToken NVARCHAR(100)
@@ -235,13 +252,83 @@ namespace TausendBackend.Api.Migrations
                 SELECT @AccountId = AccountId FROM AccessTokens WHERE AccessToken = @TokenGuid
                 DELETE FROM AccessTokens WHERE AccountID = @AccountId
 
-                UPDATE Accounts Set Enabled = 0, DeletedDateTime = GETUTCDATE() FROM Accounts WHERE AccountId = @AccountId
+                UPDATE Accounts
+                SET [Enabled] = 0,
+                    DeletedDateTime = GETUTCDATE(),
+                    UpdatedDateTime = GETUTCDATE(),
+                    Email = LEFT(CONCAT('deleted+', CAST(@AccountId AS NVARCHAR(20)), '+', Email), 255)
+                WHERE AccountId = @AccountId AND Email NOT LIKE 'deleted+%'
+
+                DELETE FROM AccountDeviceTokens WHERE AccountId = @AccountId
+                DELETE FROM PasswordResetTokens WHERE AccountID = @AccountId
+                UPDATE RefreshTokens SET RevokedDateTime = GETUTCDATE()
+                    WHERE AccountId = @AccountId AND RevokedDateTime IS NULL
 
                 UPDATE Devices SET Enabled = 0, DeletedDateTime = GETUTCDATE(), UpdatedDateTime = GETUTCDATE()
                     WHERE DeviceId IN (SELECT DeviceId FROM AccountDevicePins WHERE AccountId = @AccountId)
 
                 DELETE FROM AccountDevicePins WHERE AccountId = @AccountId
             END
+            """,
+            // Same point-14 fault, read side. One address can still map to more than one row on
+            // any database that predates the tombstone fix above, and this SELECT had no TOP and
+            // no ORDER BY, so AccountDao.ReadLoginCredentials took whichever row came back first
+            // (in practice the oldest, which is the deleted one). Enabled rows now win, newest
+            // first, which lets an address that was already duplicated log in again.
+            """
+            CREATE OR ALTER PROCEDURE [dbo].[GetLoginCredentials]
+                @Email NVARCHAR(255)
+            AS BEGIN
+                SET NOCOUNT ON
+                SELECT TOP 1 AccountId, PasswordHash, [Password], [Enabled]
+                FROM Accounts
+                WHERE Email = @Email
+                ORDER BY [Enabled] DESC, AccountId DESC
+            END
+            """,
+            // Same determinism fix on the recovery path, so a duplicated address resolves to the
+            // live account rather than assigning @AccountId from an arbitrary row.
+            """
+            CREATE OR ALTER PROCEDURE [dbo].[CreatePasswordResetToken]
+                @Email NVARCHAR(255)
+            AS BEGIN
+                SET NOCOUNT ON
+                DECLARE
+                    @AccountId BIGINT,
+                    @ResetToken UNIQUEIDENTIFIER,
+                    @CurrentUTCDateTime DATETIME
+
+                SELECT TOP 1 @AccountId = AccountId FROM Accounts
+                    WHERE Email = @Email AND [Enabled] = 1
+                    ORDER BY AccountId DESC
+
+                IF ISNULL(@AccountId, 0) = 0 BEGIN
+                    SELECT CAST(-1 AS BIGINT) AS AccountId, CAST(NULL AS CHAR(36)) AS ResetToken, CAST(NULL AS NVARCHAR(255)) AS Email, CAST(NULL AS NVARCHAR(100)) AS FirstName
+                    RETURN 0
+                END
+
+                SELECT @CurrentUTCDateTime = GETUTCDATE()
+                SELECT @ResetToken = NEWID()
+
+                INSERT INTO PasswordResetTokens(ResetToken, AccountID, CreatedDateTime, ExpirationDateTime)
+                    VALUES (@ResetToken, @AccountId, @CurrentUTCDateTime, DATEADD(HOUR, 1, @CurrentUTCDateTime))
+
+                SELECT @AccountId AS AccountId, CAST(@ResetToken AS CHAR(36)) AS ResetToken, Email, FirstName
+                FROM Accounts WHERE AccountId = @AccountId
+            END
+            """,
+            // One-time repair for addresses already bricked before the fix above shipped (the
+            // client's prueba@ and diego@alarmastausend.com). Any row that was deleted through
+            // the app -- DeletedDateTime stamped, which admin suspension never sets -- and still
+            // holds a plain address gets the same tombstone, releasing that address for
+            // registration again. The NOT LIKE guard makes re-running this a no-op.
+            """
+            UPDATE Accounts
+            SET Email = LEFT(CONCAT('deleted+', CAST(AccountId AS NVARCHAR(20)), '+', Email), 255),
+                UpdatedDateTime = GETUTCDATE()
+            WHERE [Enabled] = 0
+              AND DeletedDateTime IS NOT NULL
+              AND Email NOT LIKE 'deleted+%'
             """,
             // BlockDevice.sql/AdminBlockDevice.sql used to reassign a blocked panel's
             // AccountDevicePins rows to the literal AccountId=1 as an assumed inert "quarantine

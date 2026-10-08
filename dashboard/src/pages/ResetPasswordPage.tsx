@@ -13,6 +13,10 @@ export function ResetPasswordPage() {
   const token = params.get('token') ?? ''
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  // Client issue #12: this page had no way to see what was typed, on a screen where you must
+  // type the same new password twice and cannot paste-check it anywhere. One toggle drives
+  // both fields, so they are always shown or hidden together.
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
@@ -75,7 +79,7 @@ export function ResetPasswordPage() {
         <label>
           Nueva contraseña
           <input
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -86,11 +90,16 @@ export function ResetPasswordPage() {
         <label>
           Confirmar contraseña
           <input
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
           />
+        </label>
+
+        <label className="show-password">
+          <input type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} />
+          Mostrar contraseña
         </label>
 
         {error && <div className="error">{error}</div>}

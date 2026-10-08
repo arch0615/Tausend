@@ -101,7 +101,7 @@ export function ClockScreen({ navigation }: Props) {
   if (!deviceId) {
     return (
       <GradientBackground style={styles.centered}>
-        <Text style={[typography.bodyDim, { color: colors.onDarkDim }]}>{t('Select a Wi-Fi panel to sync its clock.')}</Text>
+        <Text style={[typography.bodyDim, { color: colors.onDarkDim }]}>{t('Select an IP panel to sync its clock.')}</Text>
       </GradientBackground>
     );
   }

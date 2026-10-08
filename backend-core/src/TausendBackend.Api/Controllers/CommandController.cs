@@ -261,13 +261,20 @@ namespace TausendBackend.Api.Controllers
         public async Task<CommandResponse> SendInstallerCommand(InstallerCommandRequest request)
         {
             if (DeviceUnauthorized(request.AccessToken, request.DeviceId, out var res)) return res;
-            // Role-gated, not just hidden client-side -- the old app gated this with a
-            // panel-fetched PIN instead of an account concept; the roles model replaces that.
-            if (!_accountBusiness.IsInstallerOrAdmin(request.AccessToken))
-            {
-                res.InformForbidden();
-                return res;
-            }
+            // Gated on owning the panel (the check just above) plus knowing the panel's own
+            // installer code, which InstallerModeScreen.tsx checks against a live PRG003 read
+            // before it will send anything here.
+            //
+            // There used to be an additional Installer/Admin account-role requirement, replacing
+            // the old app's "know the panel's code" gate with an account concept. The client
+            // reported that as broken in two separate items: #20, the Instalador entry had
+            // disappeared for them, and #4, "es necesario que pida clave de instalador y coincida
+            // con la clave de instalador (seccion 003)". Their installers are technicians on site
+            // using whatever account is on the phone and proving themselves with the panel's own
+            // code, so a role nobody's account carried made the screen unreachable for everyone.
+            //
+            // Still enforced: the caller must own this panel or be an Admin, and every command is
+            // written to the audit log below whatever the panel answers.
             var cmd = "INST-" + request.Command;
             res.Text = await _commandBusiness.SendInstallerCommand(cmd, request.AccessToken, request.DeviceId);
             // Every raw command recorded regardless of the panel's response -- see the Installer

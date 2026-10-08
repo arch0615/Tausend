@@ -137,7 +137,7 @@ export function ZonesScreen({ navigation }: Props) {
   if (!deviceId) {
     return (
       <GradientBackground style={styles.centered}>
-        <Text style={[typography.bodyDim, { color: colors.onDarkDim }]}>{t('Select a Wi-Fi panel to manage its zones.')}</Text>
+        <Text style={[typography.bodyDim, { color: colors.onDarkDim }]}>{t('Select an IP panel to manage its zones.')}</Text>
       </GradientBackground>
     );
   }

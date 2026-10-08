@@ -69,3 +69,20 @@
   border-radius: 6px;
   font-size: 13px;
 }
+
+/* The password-visibility toggle on the reset page. Overrides .login-card label/input, which
+   stack vertically and stretch full width -- wrong for a checkbox and its caption. */
+.login-card label.show-password {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.login-card label.show-password input {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+}

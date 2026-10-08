@@ -19,7 +19,10 @@ AS BEGIN
 			RETURN 0
 		END
 
-		SELECT @Val = ISNULL(D.DeviceId, 0) FROM Devices D, AccountDevicePins ADP WHERE D.Description = @Description AND ADP.DeviceId = D.DeviceId AND AccountId = @AccountId
+	-- D.Enabled = 1: a deleted/disabled panel used to keep its description reserved forever,
+	-- while being invisible in the account's own panel list (client issue #15).
+	SELECT @Val = ISNULL(D.DeviceId, 0) FROM Devices D, AccountDevicePins ADP
+		WHERE D.Description = @Description AND ADP.DeviceId = D.DeviceId AND ADP.AccountId = @AccountId AND D.Enabled = 1
 
 		IF @Val > 0 BEGIN
 			SELECT CAST(-2 AS BIGINT)

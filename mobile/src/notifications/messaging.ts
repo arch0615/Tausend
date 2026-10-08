@@ -9,7 +9,7 @@ import {
   requestPermission,
   setBackgroundMessageHandler,
 } from '@react-native-firebase/messaging';
-import { Alert, Platform } from 'react-native';
+import { Alert, Platform, Vibration } from 'react-native';
 import { registerDeviceToken } from '../api/notifications';
 import { requestNotificationPermission } from './permissions';
 import { navigationRef } from '../navigation/navigationRef';
@@ -115,6 +115,20 @@ export function subscribeToForegroundMessages(): () => void {
     const body = message.notification?.body ?? '';
     if (!title && !body) return;
     const urgent = URGENT_NOTIFICATION_TYPES.has(message.data?.type as string);
+    if (urgent) {
+      // Alert.alert on its own is silent, and it can also end up behind whatever modal is
+      // already on screen -- after a panic/emergency trigger that is the location share sheet,
+      // opened a moment earlier by the same action (see HomeScreen's runTrigger). So an alarm
+      // arriving while the app was open produced nothing the user could notice, which is the
+      // client's issue #17. Vibration is built into React Native, needs no extra native module,
+      // and fires regardless of what is covering the screen.
+      //
+      // This is NOT the full fix. The siren sound the client expects comes from the Android
+      // notification channel (my_channel_id + res/raw/alert.mp3, see MainApplication.kt), and
+      // the OS deliberately does not raise a channel notification while the app is foregrounded.
+      // Playing alert.mp3 from JS needs an audio library this project does not depend on yet.
+      Vibration.vibrate([0, 600, 300, 600, 300, 600]);
+    }
     Alert.alert(urgent ? `🚨 ${title}` : title, body);
   });
 }

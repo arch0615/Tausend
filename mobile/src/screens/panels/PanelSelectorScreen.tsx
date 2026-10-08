@@ -19,7 +19,7 @@ type Props = NativeStackScreenProps<MainStackParamList, 'PanelSelector'>;
 export function PanelSelectorScreen({ navigation }: Props) {
   const { colors, typography, spacing, radius } = useTheme();
   const { t } = useLocale();
-  const { panels, selected, selectPanel } = usePanels();
+  const { panels, selected, selectPanel, reachabilityOf } = usePanels();
   const [search, setSearch] = useState('');
 
   const filtered = panels.filter((p) => p.description.toLowerCase().includes(search.trim().toLowerCase()));
@@ -66,7 +66,16 @@ export function PanelSelectorScreen({ navigation }: Props) {
                         {item.description}
                       </Text>
                       <Text style={[typography.bodyDim, { color: colors.inkDim, marginTop: 2 }]}>
-                        {item.kind === 'sms' ? t('SMS panel') : item.isOnline ? t('Online') : t('Offline')}
+                        {item.kind === 'sms'
+                          ? t('SMS panel')
+                          : (() => {
+                              // Same reasoning as HomeScreen's indicator: prefer what a real
+                              // command round-trip proved this session over the login-time flag,
+                              // which is what made this row read "Online" with the Wi-Fi off.
+                              const live = reachabilityOf('ip', item.deviceId);
+                              const connected = live === 'unknown' ? !!item.isOnline : live === 'online';
+                              return connected ? t('Online') : t('Offline');
+                            })()}
                       </Text>
                     </View>
                   </Pressable>

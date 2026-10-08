@@ -12,6 +12,12 @@
     <!-- Android 13+ (API 33) requires this before any notification, local or push, can be
          shown: requested at runtime, see src/notifications/permissions.ts. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- An alarm push that lands while the app is already open never produces a system
+         notification (standard OS behaviour on both platforms), so it made no sound and no
+         vibration at all. The client reported that as a panic alert doing nothing while the app
+         is open; src/notifications/messaging.ts vibrates for alarm-type messages instead.
+         A normal permission: granted at install, no runtime prompt. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
       android:name=".MainApplication"

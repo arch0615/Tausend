@@ -142,7 +142,7 @@ export function ProgramControlList({ labelPrefix, emptyNamePlaceholder }: Progra
     return (
       <GradientBackground style={styles.centered}>
         <Text style={[typography.bodyDim, { color: colors.onDarkDim }]}>
-          {t('Select a Wi-Fi panel to manage its {name}.', { name: emptyNamePlaceholder.toLowerCase() })}
+          {t('Select an IP panel to manage its {name}.', { name: emptyNamePlaceholder.toLowerCase() })}
         </Text>
       </GradientBackground>
     );

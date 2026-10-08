@@ -31,13 +31,6 @@ export function LoginScreen({ route, navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [notice] = useState(route.params?.notice ?? null);
   const [submitting, setSubmitting] = useState(false);
-  // Bumped on every failed attempt to force the password TextInput to fully remount (see its key
-  // prop below) -- client report: after one wrong password, even the correct one kept getting
-  // rejected until the app was closed. Neither AuthContext.login() nor the backend's Login retain
-  // any state across attempts (a failed login is a pure no-op on both), so this targets the other
-  // explanation: Android autofill or the native input itself holding onto the rejected value
-  // despite the controlled value/onChangeText looking right from the JS side.
-  const [passwordFieldKey, setPasswordFieldKey] = useState(0);
 
   async function handleSubmit() {
     if (!email.trim() || !password) {
@@ -49,9 +42,15 @@ export function LoginScreen({ route, navigation }: Props) {
     try {
       const result = await login(email.trim(), password);
       if (!result.ok) {
+        // The field is deliberately left exactly as the user typed it. Clearing it and forcing a
+        // remount was the previous attempt at the client's "one wrong password locks you out
+        // until you restart the app" report (issue #21), and it is the more likely cause than the
+        // cure: on Android, resetting a focused secureTextEntry input's value from JS can leave
+        // the native view holding the old text, so the next onChangeText reports the old and new
+        // text joined together and every later attempt is wrong no matter what is typed. Leaving
+        // the value alone keeps JS and the native view in sync, and lets the user fix a typo
+        // instead of retyping the whole password.
         setError(result.message);
-        setPassword('');
-        setPasswordFieldKey((k) => k + 1);
         return;
       }
       // Ported from the previous app: the backend auto-unlinks an IP panel whose saved PIN no
@@ -96,7 +95,10 @@ export function LoginScreen({ route, navigation }: Props) {
           <FormField
             label={t('Email')}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (error) setError(null);
+            }}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="email-address"
@@ -104,10 +106,12 @@ export function LoginScreen({ route, navigation }: Props) {
             style={styles.input}
           />
           <FormField
-            key={passwordFieldKey}
             label={t('Password')}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              if (error) setError(null);
+            }}
             secureTextEntry
             textContentType="password"
             autoComplete="off"

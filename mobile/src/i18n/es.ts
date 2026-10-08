@@ -186,9 +186,9 @@ export const es: Record<string, string> = {
 
   // Pairing flow
   'How does your panel connect?': '¿Cómo se conecta tu central?',
-  'Wi-Fi panel': 'Central Wi-Fi',
-  "Wi-Fi panels connect to your home network and are controlled over the internet. SMS panels have no Wi-Fi and are controlled by text message to a SIM card in the panel.":
-    'Las centrales Wi-Fi se conectan a tu red doméstica y se controlan por internet. Las centrales SMS no tienen Wi-Fi y se controlan por mensaje de texto a una tarjeta SIM en la central.',
+  'IP panel': 'Central IP',
+  "IP panels connect to the app's server through your home Wi-Fi network and/or the mobile data of the alarm's cellular line. SMS panels do not use a server connection and are controlled by text messages between the users' phones and the alarm's cellular line.":
+    'Las centrales IP se conectan al servidor de la APP a través de tu red Wi-Fi doméstica y/o los datos móviles de la línea celular de la alarma. Las centrales SMS no usan conexión al servidor y se controlan por mensajes de texto entre los celulares de los usuarios y la línea celular de la alarma.',
   "Before you start, put your alarm panel into Access Point (setup) mode -- check the panel's manual for the exact button or installer-code sequence for your model.":
     'Antes de comenzar, pon tu central de alarma en modo Punto de Acceso (configuración); consulta el manual de la central para conocer el botón exacto o la secuencia de código de instalador para tu modelo.',
   "Once it's in setup mode, the panel will broadcast its own Wi-Fi network. You'll connect to that network briefly to check and/or modify its programming.":
@@ -258,7 +258,7 @@ export const es: Record<string, string> = {
   // SmsPairingScreen.tsx
   'Add an SMS panel': 'Agregar una central SMS',
   'Enter the phone number of the SIM card installed in the panel, and its SMS PIN (set by the installer).':
-    'Ingresa el número de teléfono de la tarjeta SIM instalada en la central, y su PIN de SMS (configurado por el instalador).',
+    'Ingresa el número de teléfono de la tarjeta SIM instalada en la central, y su Clave SMS (configurada por el instalador).',
   'Panel model': 'Modelo de la central',
   'Select your panel model.': 'Selecciona el modelo de tu central.',
   'Enter a name for this panel.': 'Ingresa un nombre para esta central.',
@@ -290,7 +290,7 @@ export const es: Record<string, string> = {
   Discard: 'Descartar',
   "The panel isn't responding right now. Try again.": 'La central no responde en este momento. Intenta de nuevo.',
   'Could not save changes.': 'No se pudieron guardar los cambios.',
-  'Select a Wi-Fi panel to manage its zones.': 'Selecciona una central Wi-Fi para gestionar sus zonas.',
+  'Select an IP panel to manage its zones.': 'Selecciona una central IP para gestionar sus zonas.',
   'No zones yet.': 'Todavía no hay zonas.',
   'Zone {n}': 'Zona {n}',
   Edit: 'Editar',
@@ -298,12 +298,12 @@ export const es: Record<string, string> = {
 
   // ExclusionsScreen.tsx
   "Zones can't be excluded while the alarm is armed.": 'Las zonas no se pueden excluir mientras la alarma está armada.',
-  'Select a Wi-Fi panel to manage its exclusions.': 'Selecciona una central Wi-Fi para gestionar sus exclusiones.',
+  'Select an IP panel to manage its exclusions.': 'Selecciona una central IP para gestionar sus exclusiones.',
   'The alarm is armed -- you can only remove existing exclusions.':
     'La alarma está armada; solo puedes quitar exclusiones existentes.',
 
   // MemoryScreen.tsx
-  'Select a Wi-Fi panel to view its memory.': 'Selecciona una central Wi-Fi para ver su memoria.',
+  'Select an IP panel to view its memory.': 'Selecciona una central IP para ver su memoria.',
   'No zones currently have memory.': 'Ninguna zona tiene memoria actualmente.',
 
   // ProgramControlList.tsx (shared by PgmScreen/ScheduledDeparturesScreen)
@@ -313,15 +313,15 @@ export const es: Record<string, string> = {
   'Toggle an output on "{name}" by text message.': 'Activa o desactiva una salida en "{name}" por mensaje de texto.',
 
   // SmsPasswordChangeScreen.tsx
-  'Change SMS PIN': 'Cambiar PIN SMS',
-  'Change the SMS PIN on "{name}" by text message.': 'Cambia el PIN SMS de "{name}" por mensaje de texto.',
-  'Select an SMS panel to change its PIN.': 'Selecciona una central SMS para cambiar su PIN.',
-  'SMS PIN': 'PIN SMS',
-  'Repeat SMS PIN': 'Repetir PIN SMS',
-  'Enter a valid SMS PIN.': 'Ingresa un PIN SMS válido.',
+  'Change SMS PIN': 'Cambiar Clave SMS',
+  'Change the SMS PIN on "{name}" by text message.': 'Cambia la Clave SMS de "{name}" por mensaje de texto.',
+  'Select an SMS panel to change its PIN.': 'Selecciona una central SMS para cambiar su Clave SMS.',
+  'SMS PIN': 'Clave SMS',
+  'Repeat SMS PIN': 'Repetir Clave SMS',
+  'Enter a valid SMS PIN.': 'Ingresa una Clave SMS válida.',
   'Enter a valid confirmation PIN.': 'Ingresa un PIN de confirmación válido.',
   'The PINs do not match.': 'Los PIN no coinciden.',
-  'Was the SMS PIN changed successfully on the panel?': '¿Se cambió correctamente el PIN SMS en la central?',
+  'Was the SMS PIN changed successfully on the panel?': '¿Se cambió correctamente la Clave SMS en la central?',
   'Could not update the panel.': 'No se pudo actualizar la central.',
   Yes: 'Sí',
   No: 'No',
@@ -330,7 +330,7 @@ export const es: Record<string, string> = {
   Departures: 'Partidas',
   'You have unsaved {name} names. Leave without saving?': 'Tienes nombres de {name} sin guardar. ¿Salir sin guardar?',
   'Could not toggle the output.': 'No se pudo cambiar el estado de la salida.',
-  'Select a Wi-Fi panel to manage its {name}.': 'Selecciona una central Wi-Fi para gestionar sus {name}.',
+  'Select an IP panel to manage its {name}.': 'Selecciona una central IP para gestionar sus {name}.',
   'No {name} yet.': 'Todavía no hay {name}.',
 
   // PanelUsersScreen.tsx
@@ -339,7 +339,7 @@ export const es: Record<string, string> = {
   'Enter a valid PIN-holder number.': 'Ingresa un número de usuario válido.',
   'Enter a label for this PIN-holder.': 'Ingresa una etiqueta para este usuario.',
   'That PIN-holder number already has a label.': 'Ese número de usuario ya tiene una etiqueta.',
-  'Select a Wi-Fi panel to manage its user labels.': 'Selecciona una central Wi-Fi para gestionar sus etiquetas de usuarios.',
+  'Select an IP panel to manage its user labels.': 'Selecciona una central IP para gestionar sus etiquetas de usuarios.',
   'No PIN-holder labels yet.': 'Todavía no hay etiquetas de usuarios.',
   'User number {n}': 'Usuario número {n}',
   'PIN-holder number': 'Número de usuario',
@@ -360,7 +360,7 @@ export const es: Record<string, string> = {
   'Discharge voltage': 'Tensión de descarga',
   'Charge current': 'Corriente de carga',
   'Could not read battery status.': 'No se pudo leer el estado de la batería.',
-  'Select a Wi-Fi panel to view its battery status.': 'Selecciona una central Wi-Fi para ver su estado de batería.',
+  'Select an IP panel to view its battery status.': 'Selecciona una central IP para ver su estado de batería.',
 
   // FailuresScreen.tsx
   'Main power (220VAC) supply failure': 'Falla de alimentación principal (220VAC)',
@@ -374,12 +374,12 @@ export const es: Record<string, string> = {
   'Event communication failure': 'Falla de comunicación de eventos',
   'Keypad/accessory bus communication failure': 'Falla de comunicación del bus de teclados/accesorios',
   'Could not read failure status.': 'No se pudo leer el estado de fallas.',
-  'Select a Wi-Fi panel to view its failures.': 'Selecciona una central Wi-Fi para ver sus fallas.',
+  'Select an IP panel to view its failures.': 'Selecciona una central IP para ver sus fallas.',
   'No active faults.': 'No hay fallas activas.',
 
   // EventsScreen.tsx
   'Could not load events.': 'No se pudieron cargar los eventos.',
-  'Select a Wi-Fi panel to view its events.': 'Selecciona una central Wi-Fi para ver sus eventos.',
+  'Select an IP panel to view its events.': 'Selecciona una central IP para ver sus eventos.',
   'No events yet.': 'Todavía no hay eventos.',
 
   // CustomMessagesScreen.tsx
@@ -414,7 +414,7 @@ export const es: Record<string, string> = {
   // ClockScreen.tsx
   'Could not read the panel time.': 'No se pudo leer la hora de la central.',
   'Could not sync the panel time.': 'No se pudo sincronizar la hora de la central.',
-  'Select a Wi-Fi panel to sync its clock.': 'Selecciona una central Wi-Fi para sincronizar su reloj.',
+  'Select an IP panel to sync its clock.': 'Selecciona una central IP para sincronizar su reloj.',
   'Panel time': 'Horario de el equipo',
   'Phone time': 'Horario actual',
   'Server time': 'Hora del servidor',
@@ -423,9 +423,13 @@ export const es: Record<string, string> = {
   // InstallerModeScreen.tsx
   'Your account is not authorized for Installer mode.': 'Tu cuenta no está autorizada para el modo instalador.',
   '(no response)': '(sin respuesta)',
-  'Select a Wi-Fi panel to use Installer mode.': 'Selecciona una central Wi-Fi para usar el modo instalador.',
+  'Select an IP panel to use Installer mode.': 'Selecciona una central IP para usar el modo instalador.',
   Command: 'Comando',
   Send: 'Enviar',
+  'Installer code': 'Clave de instalador',
+  'Enter the installer code configured on this panel (section 003).':
+    'Ingresa la clave de instalador configurada en esta central (sección 003).',
+  'Incorrect installer code.': 'Clave de instalador incorrecta.',
 
   // ManagePanelScreen.tsx
   'This panel is no longer linked to your account.': 'Esta central ya no está vinculada a tu cuenta.',
@@ -501,7 +505,7 @@ export const es: Record<string, string> = {
   'Could not save the schedule.': 'No se pudo guardar la programación.',
   'Could not update the schedule.': 'No se pudo actualizar la programación.',
   'Could not delete the schedule.': 'No se pudo eliminar la programación.',
-  'Select a Wi-Fi panel to manage its schedules.': 'Selecciona una central Wi-Fi para administrar sus programaciones.',
+  'Select an IP panel to manage its schedules.': 'Selecciona una central IP para administrar sus programaciones.',
   On: 'Encendido',
   Off: 'Apagado',
   Delete: 'Eliminar',

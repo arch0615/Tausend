@@ -37,6 +37,13 @@ namespace TausendBackend.Api.Business
                     }
                 }
             }
+            // Sorted before returning, not just inside the DAO's ORDER BY. The synthesized
+            // default slots above are APPENDED to the saved rows, so the list came back as
+            // "every named slot in order, then every unnamed slot in order" rather than 1..32.
+            // That is the client's issue #3: the zone list read 1, 2, 3, 25, 27, ... and only
+            // then 4, 5, 6, and renaming zone 9 appeared to "move" it, because saving a name
+            // promoted it out of the appended block into the saved block.
+            zones.Sort((a, b) => a.ZoneNumber.CompareTo(b.ZoneNumber));
             return zones;
         }
 

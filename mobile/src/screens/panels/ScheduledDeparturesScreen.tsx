@@ -167,7 +167,7 @@ export function ScheduledDeparturesScreen() {
   if (!deviceId) {
     return (
       <GradientBackground style={styles.centered}>
-        <Text style={[typography.bodyDim, { color: colors.onDarkDim }]}>{t('Select a Wi-Fi panel to manage its schedules.')}</Text>
+        <Text style={[typography.bodyDim, { color: colors.onDarkDim }]}>{t('Select an IP panel to manage its schedules.')}</Text>
       </GradientBackground>
     );
   }
