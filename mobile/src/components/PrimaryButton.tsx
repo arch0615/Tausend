@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 
 interface PrimaryButtonProps {
@@ -21,30 +21,46 @@ export function PrimaryButton({ title, onPress, disabled, loading, tone = 'accen
   const isDisabled = disabled || loading;
   const outline = tone === 'outline';
   const fill = tone === 'danger' ? colors.danger : tone === 'dark' ? colors.headerBg : colors.accent;
+  // The Pressable is a bare wrapper and every visual (fill, border, padding, elevation, shadow)
+  // lives on the View inside it -- the same shape ListRow already uses.
+  //
+  // These used to all sit on the Pressable itself with just a Text inside, and on Android that
+  // left the button's padding dead to touch: only the text's own band responded, so tapping the
+  // coloured area a few millimetres above or below the label did nothing. Measured on a device,
+  // the button is 127px tall but only the middle 54px (exactly the text's height) reacted.
+  // Wrapping the styled View instead gives the Pressable a child that fills it, so the whole
+  // button is hit-testable.
+  //
+  // hitSlop stays on top of that as a cheap guarantee, and widens the target past the visual
+  // edge, which is what the platform touch-target guidance wants anyway.
   return (
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
-      style={[
-        styles.button,
-        {
-          backgroundColor: outline ? 'transparent' : fill,
-          borderWidth: outline ? 1.5 : 0,
-          borderColor: outline ? colors.accent : 'transparent',
-          borderRadius: radius.sm,
-          paddingVertical: spacing.md + 2,
-          opacity: isDisabled ? 0.6 : 1,
-          shadowColor: fill,
-          shadowOpacity: outline ? 0 : styles.button.shadowOpacity,
-          elevation: outline ? 0 : styles.button.elevation,
-        },
-      ]}
+      hitSlop={8}
+      style={{ opacity: isDisabled ? 0.6 : 1 }}
     >
-      {loading ? (
-        <ActivityIndicator color={outline ? colors.accent : colors.accentInk} />
-      ) : (
-        <Text style={[typography.button, { color: outline ? colors.accent : colors.accentInk }]}>{title}</Text>
-      )}
+      <View
+        style={[
+          styles.button,
+          {
+            backgroundColor: outline ? 'transparent' : fill,
+            borderWidth: outline ? 1.5 : 0,
+            borderColor: outline ? colors.accent : 'transparent',
+            borderRadius: radius.sm,
+            paddingVertical: spacing.md + 2,
+            shadowColor: fill,
+            shadowOpacity: outline ? 0 : styles.button.shadowOpacity,
+            elevation: outline ? 0 : styles.button.elevation,
+          },
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator color={outline ? colors.accent : colors.accentInk} />
+        ) : (
+          <Text style={[typography.button, { color: outline ? colors.accent : colors.accentInk }]}>{title}</Text>
+        )}
+      </View>
     </Pressable>
   );
 }

@@ -141,7 +141,13 @@ export function MainMenu({ visible, onClose }: { visible: boolean; onClose: () =
             {/* Previous app's Ajustes -> "Cuenta de usuario" -- shows account details and the
                 "Eliminar Cuenta" action; see UserAccountScreen.tsx. */}
             <ListRow icon="👤" iconColor={ICON_COLORS.slate} label={t('User account')} onPress={() => go('UserAccount')} />
-            <ListRow icon="⏻" iconColor={colors.danger} label={t('Log out')} navigates={false} onPress={() => { onClose(); logout(); }} />
+            {/* logout() deferred a frame for the same reason go() is, above. Logging out clears
+                the session, which swaps the whole navigator from MainStack to AuthStack. Doing
+                that in the same tick as this modal's own dismissal raced Android's modal teardown
+                and left a stale transparent window attached over the new Login screen -- every tap
+                landed on that instead, so the screen looked completely dead after one failed
+                sign-in attempt. */}
+            <ListRow icon="⏻" iconColor={colors.danger} label={t('Log out')} navigates={false} onPress={() => { onClose(); requestAnimationFrame(() => logout()); }} />
           </ListGroup>
 
           <Text style={[typography.bodyDim, { color: colors.onDarkDim, textAlign: 'center', marginTop: spacing.xl }]}>

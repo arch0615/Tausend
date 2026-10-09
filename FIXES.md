@@ -14,7 +14,15 @@ Tested on a release build running on a real device and an emulator.
 | 20 | "Instalador" missing from menu | It was hidden behind an account role. Visible again |
 | 21 | Wrong password locked you out until app restart | The screen was clearing the password box on failure, which left Android's own input holding the old text. It no longer touches the field |
 
-**Also fixed: a crash.** The app died on any activity recreation (rotating the phone, a system setting change, or coming back after Android reclaimed its memory). `MainActivity` was missing the `onCreate(null)` override that react-native-screens requires. Found by running the app, not by reading it.
+## Also fixed, not on the client's list
+
+Three bugs found by actually running the app. None of them were visible to the type checker, the linter or the tests.
+
+**Startup crash.** The app died on any activity recreation: rotating the phone, a system setting change, or returning to it after Android reclaimed its memory. `MainActivity` was missing the `onCreate(null)` override that react-native-screens requires.
+
+**Logout left the login screen dead.** Logging out closed the menu and tore down the navigation stack in the same instant, which left an invisible modal window over the login screen. Since the loading overlay is full screen, it swallowed every tap: no error, no reaction to anything, until the app was force closed. Logging out now waits a frame, and the login screen clears the stuck state whenever it regains focus.
+
+**Buttons only responded on the text.** Every button in the app, not just login. Measured on a device: the button is 127px tall but only the middle 54px reacted, exactly the height of its label. Tapping the coloured area above or below did nothing. The padding and shadow were on the Pressable itself with only a Text inside, where the rest of the app wraps a styled View. Now the whole button is tappable, with a little margin past the edge on top.
 
 ## Needs the backend redeployed
 

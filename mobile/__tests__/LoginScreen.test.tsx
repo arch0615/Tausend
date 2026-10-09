@@ -23,6 +23,18 @@ jest.mock('../src/auth/AuthContext', () => ({
   useAuth: () => ({ login: mockLogin, session: null, logout: jest.fn() }),
 }));
 
+// LoginScreen clears a possibly-stuck `submitting` flag on focus (see its useFocusEffect). The
+// real hook needs a NavigationContainer, which this screen is rendered outside of here, so stand
+// it in with a plain mount effect -- same timing for this screen's purposes.
+jest.mock('@react-navigation/native', () => {
+  const actual = jest.requireActual('@react-navigation/native');
+  const React = require('react');
+  return {
+    ...actual,
+    useFocusEffect: (cb: React.EffectCallback) => React.useEffect(cb, [cb]),
+  };
+});
+
 const navigation = { navigate: jest.fn(), replace: jest.fn() } as never;
 const route = { params: undefined } as never;
 

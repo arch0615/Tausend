@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { GradientBackground } from '../../components/GradientBackground';
 import { Card } from '../../components/Card';
@@ -31,6 +32,18 @@ export function LoginScreen({ route, navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [notice] = useState(route.params?.notice ?? null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Safety net. `submitting` drives a full-screen Modal (LoadingOverlay), so if it is ever left
+  // true with nothing in flight, that modal sits invisibly over the screen and swallows every
+  // tap -- the screen looks completely dead, with no error and no reaction to any button. That
+  // is what happened when logging out tore the navigator down while this screen was mounting.
+  // The root cause is fixed in MainMenu (logout is deferred a frame), but clearing the flag
+  // whenever the screen regains focus means a stuck overlay can never strand the user again.
+  useFocusEffect(
+    useCallback(() => {
+      setSubmitting(false);
+    }, []),
+  );
 
   async function handleSubmit() {
     if (!email.trim() || !password) {
