@@ -52,9 +52,40 @@ namespace TausendBackend.Api.Controllers
             return accountId;
         }
 
+        /// <summary>
+        /// Sends a real push to a real handset, so it is gated twice: the caller must be signed
+        /// in, and the target device token must be one registered to their own account (an Admin
+        /// may target any). It used to require nothing at all -- no access token, no ownership --
+        /// so anyone who learned a device token could push arbitrary notifications to that phone.
+        /// On an alarm product that means a convincing fake "Panic" or "Fire" alert on someone
+        /// else's handset, which is why this is worth closing even though the endpoint is only
+        /// ever used for diagnostics.
+        /// </summary>
         [HttpPost("SendTestNotification")]
         public CommandResponse SendTestNotification(SendTestNotificationRequest request)
         {
+            var accountId = _accountBusiness.ResolveAccountId(request.AccessToken);
+            if (accountId == 0)
+            {
+                var unauthorized = new CommandResponse();
+                unauthorized.InformUnauthorized();
+                return unauthorized;
+            }
+
+            // The token may carry an "android:"/"ios:" prefix (parsed below); compare on the bare
+            // value so a prefixed request cannot sidestep the ownership check.
+            var bare = request.DeviceToken.Contains(':')
+                ? request.DeviceToken.Split(':', 2)[1]
+                : request.DeviceToken;
+            var ownsToken = _accountBusiness.EnumDeviceTokenOfAccount(accountId)
+                .Any(t => string.Equals(t.Token, bare, StringComparison.Ordinal));
+            if (!ownsToken && !_accountBusiness.IsAdmin(request.AccessToken))
+            {
+                var forbidden = new CommandResponse();
+                forbidden.InformForbidden();
+                return forbidden;
+            }
+
             string response;
             try
             {

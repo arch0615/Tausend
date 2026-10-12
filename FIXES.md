@@ -22,6 +22,8 @@ Three bugs found by actually running the app. None of them were visible to the t
 
 **Logout left the login screen dead.** Logging out closed the menu and tore down the navigation stack in the same instant, which left an invisible modal window over the login screen. Since the loading overlay is full screen, it swallowed every tap: no error, no reaction to anything, until the app was force closed. Logging out now waits a frame, and the login screen clears the stuck state whenever it regains focus.
 
+**Test-notification endpoint was wide open.** `NotificationService/SendTestNotification` required no sign-in at all: anyone who learned a phone's device token could push arbitrary notifications to it. On an alarm product that means a convincing fake "Panic" or "Fire" alert on someone else's handset. It now requires a valid session, and the target device must belong to the caller's own account unless they are an Admin.
+
 **Buttons only responded on the text.** Every button in the app, not just login. Measured on a device: the button is 127px tall but only the middle 54px reacted, exactly the height of its label. Tapping the coloured area above or below did nothing. The padding and shadow were on the Pressable itself with only a Text inside, where the rest of the app wraps a styled View. Now the whole button is tappable, with a little margin past the edge on top.
 
 ## Needs the backend redeployed
