@@ -26,18 +26,20 @@ Three bugs found by actually running the app. None of them were visible to the t
 
 **Buttons only responded on the text.** Every button in the app, not just login. Measured on a device: the button is 127px tall but only the middle 54px reacted, exactly the height of its label. Tapping the coloured area above or below did nothing. The padding and shadow were on the Pressable itself with only a Text inside, where the rest of the app wraps a styled View. Now the whole button is tappable, with a little margin past the edge on top.
 
-## Needs the backend redeployed
+## Backend fixes, now deployed and live
 
-Code is done. Nothing changes until the server is updated.
+Deployed 13 Oct. #14 verified working against the live server; #3 and #15 need a panel to confirm.
 
 | # | Issue | Fix |
 |---|---|---|
 | 3 | Zone list out of order, editing a zone moved it | Unnamed zones were being appended after the named ones instead of sorted by number. Same bug in exclusions and outputs, all three fixed |
-| 12 | Reset password page had no "show password" | Added. The login half of this issue looks like the same fault as #14, worth retesting after deploy |
-| 14 | Deleted email became permanently unusable | Deleting an account kept the email attached to the dead row, so re-registering made a duplicate and login picked the wrong one. The email is released now, and a one-time cleanup frees the two stuck addresses (prueba@, diego@) |
+| 12 | Reset password page had no "show password" (**live now**) | Added. The login half of this issue looks like the same fault as #14, worth retesting after deploy |
+| 14 | Deleted email became permanently unusable (**verified fixed live**) | Deleting an account kept the email attached to the dead row, so re-registering made a duplicate and login picked the wrong one. The email is released now, and a one-time cleanup frees the two stuck addresses (prueba@, diego@) |
 | 15 | "Device with repeated description" on an account with no panels | Two faults. The pairing actually succeeded and then the push notification threw, so the error shown was wrong. And the duplicate name check was not ignoring deleted panels |
 
-Push notifications also start working after deploy. The Firebase server key was from the old project, the correct one is now in place.
+Push notifications now work end to end. Verified by sending a real push that reached the app, routed through `projects/alarmas-tausend-app`. The server key had been from the old project; the correct one is in place.
+
+**#14 is confirmed fixed on the live server.** Register, delete, re-register the same email, log in: all pass, tested both through the API and through the app's own delete screen.
 
 ## Needs the client to check, panel required
 
