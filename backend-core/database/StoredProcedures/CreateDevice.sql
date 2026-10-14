@@ -12,42 +12,78 @@ AS BEGIN
 		@CurrentDateTime DATETIME,
 		@Result BIGINT
 
-		SELECT @AccountId = ISNULL(AccountID, 0) FROM AccessTokens where AccessToken = @AccessToken
+	SELECT @AccountId = ISNULL(AccountID, 0) FROM AccessTokens WHERE AccessToken = @AccessToken
 
-		IF @AccountId = 0 BEGIN
-			SELECT CAST(-1 AS BIGINT)
-			RETURN 0
-		END
+	IF ISNULL(@AccountId, 0) = 0 BEGIN
+		SELECT CAST(-1 AS BIGINT)
+		RETURN 0
+	END
 
 	-- D.Enabled = 1: a deleted/disabled panel used to keep its description reserved forever,
 	-- while being invisible in the account's own panel list (client issue #15).
 	SELECT @Val = ISNULL(D.DeviceId, 0) FROM Devices D, AccountDevicePins ADP
 		WHERE D.Description = @Description AND ADP.DeviceId = D.DeviceId AND ADP.AccountId = @AccountId AND D.Enabled = 1
 
-		IF @Val > 0 BEGIN
-			SELECT CAST(-2 AS BIGINT)
-			RETURN 0
-		END
+	IF ISNULL(@Val, 0) > 0 BEGIN
+		SELECT CAST(-2 AS BIGINT)
+		RETURN 0
+	END
 
-		SELECT @CurrentDateTime = GETUTCDATE()
+	SELECT @CurrentDateTime = GETUTCDATE()
 
-		-- A device that was Block-ed (see BlockDevice.sql) keeps its Devices row Enabled=1 --
-		-- only its PIN rows get reassigned to the orphan account, so the same physical panel
-		-- (same Identifier) can be re-linked with its own PIN afterward. Without this reuse
-		-- check, re-linking used to INSERT a second Devices row sharing the same Identifier,
-		-- silently duplicating the panel and leaving zones/PGM/events split across two DeviceIds
-		-- for what is really one physical central.
-		SELECT @Result = ISNULL(DeviceId, 0) FROM Devices WHERE Identifier = @Identifier AND Enabled = 1
+	-- Find a live row for this panel.
+	--
+	-- This used to be `SELECT @Result = ISNULL(DeviceId, 0) FROM Devices WHERE ...`, which looks
+	-- like it defaults to 0 but does not: when the SELECT matches no rows at all, @Result is
+	-- never assigned and keeps its previous value, which here is NULL. ISNULL only rewrites a
+	-- NULL column inside a row that was actually returned. `IF @Result = 0` is then UNKNOWN
+	-- rather than true, so the INSERT below was skipped and the link row was inserted with a
+	-- NULL DeviceId -- surfacing to the user as the raw SQL error "Cannot insert the value NULL
+	-- into column 'DeviceId'". That is the client's "no es posible vincular centrales".
+	--
+	-- It bites whenever no ENABLED row exists for the identifier, which is exactly the state
+	-- after a panel has been deleted, hence "after unlinking it can never be linked again".
+	SET @Result = NULL
+	SELECT TOP 1 @Result = DeviceId FROM Devices
+		WHERE Identifier = @Identifier AND Enabled = 1
+		ORDER BY DeviceId DESC
 
-		IF @Result = 0 BEGIN
-			INSERT INTO Devices(Description, Identifier, CreatedDateTime, UpdatedDateTime, IsOnline, Enabled, PublicKey) VALUES (@Description, @Identifier, @CurrentDateTime, @CurrentDateTime, 0, 1, @PublicKey)
+	IF @Result IS NULL BEGIN
+		-- A retired row for this same panel is revived rather than inserting a second one, so a
+		-- panel keeps one identity (and its event history) across unlink/relink cycles.
+		SELECT TOP 1 @Result = DeviceId FROM Devices
+			WHERE Identifier = @Identifier
+			ORDER BY DeviceId DESC
+
+		IF @Result IS NULL BEGIN
+			INSERT INTO Devices(Description, Identifier, CreatedDateTime, UpdatedDateTime, IsOnline, Enabled, PublicKey)
+				VALUES (@Description, @Identifier, @CurrentDateTime, @CurrentDateTime, 0, 1, @PublicKey)
 			SELECT @Result = CAST(SCOPE_IDENTITY() AS BIGINT)
 		END
 		ELSE BEGIN
-			UPDATE Devices SET Description = @Description, UpdatedDateTime = @CurrentDateTime WHERE DeviceId = @Result
+			UPDATE Devices
+			SET Description = @Description,
+				Enabled = 1,
+				DeletedDateTime = NULL,
+				UpdatedDateTime = @CurrentDateTime,
+				PublicKey = @PublicKey
+			WHERE DeviceId = @Result
 		END
-
-		INSERT INTO AccountDevicePins(AccountId, DeviceId, PIN) VALUES (@AccountId, @Result, @Pin)
-
-		SELECT @Result
 	END
+	ELSE BEGIN
+		UPDATE Devices SET Description = @Description, UpdatedDateTime = @CurrentDateTime WHERE DeviceId = @Result
+	END
+
+	-- Belt and braces: never attempt the link insert without a real DeviceId.
+	IF @Result IS NULL BEGIN
+		SELECT CAST(-1 AS BIGINT)
+		RETURN 0
+	END
+
+	-- Re-linking a panel this account already holds replaces its row instead of stacking a
+	-- second one, which would make the account's own panel list show the same panel twice.
+	DELETE FROM AccountDevicePins WHERE AccountId = @AccountId AND DeviceId = @Result
+	INSERT INTO AccountDevicePins(AccountId, DeviceId, PIN) VALUES (@AccountId, @Result, @Pin)
+
+	SELECT @Result
+END

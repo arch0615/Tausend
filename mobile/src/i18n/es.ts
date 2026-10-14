@@ -242,15 +242,15 @@ export const es: Record<string, string> = {
   "Enter the panel's identifier and its 4-digit user PIN to add it to your account.":
     'Ingresa el identificador de la central y un código de usuario dado de alta previamente en la central para agregarla a tu cuenta.',
   "Enter the panel's identifier.": 'Ingresa el identificador de la central.',
-  'The PIN must be 4 digits.': 'El PIN debe tener 4 dígitos.',
+  'The PIN must be 4 digits.': 'El código de usuario debe tener 4 dígitos.',
   'Too many incorrect attempts. Double-check the panel details before trying again.':
     'Demasiados intentos incorrectos. Verifica los datos de la central antes de intentar de nuevo.',
-  'Incorrect PIN. {left} attempt left.': 'PIN incorrecto. Queda {left} intento.',
-  'Incorrect PIN. {left} attempts left.': 'PIN incorrecto. Quedan {left} intentos.',
+  'Incorrect PIN. {left} attempt left.': 'Código de usuario incorrecto. Queda {left} intento.',
+  'Incorrect PIN. {left} attempts left.': 'Código de usuario incorrecto. Quedan {left} intentos.',
   'Panel name': 'Descripción',
   'Could not link the panel.': 'No se pudo vincular la central.',
   "Too many incorrect PIN attempts. Go back and confirm the panel's identifier and PIN before trying again.":
-    'Demasiados intentos de PIN incorrecto. Regresa y confirma el identificador y el PIN de la central antes de intentar de nuevo.',
+    'Demasiados intentos con un código de usuario incorrecto. Regresa y confirma el identificador y el código de usuario de la central antes de intentar de nuevo.',
   'Panel identifier': 'Identificador',
   'User code (4 digits)': 'Código de Usuario',
   'Panel description': 'Descripción',

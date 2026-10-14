@@ -374,13 +374,23 @@ namespace TausendBackend.Api.Dao
             }
         }
 
-        public string GetDevicePIN(long deviceId)
+        /// <summary>The caller's own saved code for this panel. accountId must be supplied so a
+        /// panel shared with another account doesn't return the wrong one -- see GetDevicePIN.sql.</summary>
+        public string GetDevicePIN(long deviceId, long accountId = 0)
         {
             _db.OpenConnection();
             try
             {
                 var sqlCommand = _db.CreateStoredProcedureCommand("dbo.GetDevicePIN");
                 _db.AddLongParameter(sqlCommand, "DeviceId", deviceId);
+                // 0 means "any linked account", the long-standing behaviour the command path
+                // relies on (it only needs a code the panel will accept, and ownership is already
+                // checked by the controller). Passed as NULL so the proc's own
+                // "@AccountId IS NULL" branch handles it rather than matching AccountId = 0.
+                if (accountId > 0)
+                    _db.AddLongParameter(sqlCommand, "AccountId", accountId);
+                else
+                    sqlCommand.Parameters.AddWithValue("AccountId", DBNull.Value);
                 var pin = (string?)sqlCommand.ExecuteScalar();
                 _db.CommitTransaction();
                 return pin ?? "";

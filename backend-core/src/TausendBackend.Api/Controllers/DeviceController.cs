@@ -89,7 +89,7 @@ namespace TausendBackend.Api.Controllers
             if (pinCheck == "invalid")
             {
                 var res = new NewCreatedDeviceResponse();
-                res.InformBusinessError("PIN incorrecto", 400);
+                res.InformBusinessError("Código de usuario incorrecto", 400);
                 return res;
             }
             var offline = new NewCreatedDeviceResponse();
@@ -177,7 +177,7 @@ namespace TausendBackend.Api.Controllers
             if (pinCheck == "invalid")
             {
                 var res = new CreatedDeviceResponse();
-                res.InformBusinessError("PIN incorrecto", 400);
+                res.InformBusinessError("Código de usuario incorrecto", 400);
                 return res;
             }
             var offline = new CreatedDeviceResponse();

@@ -91,7 +91,10 @@ namespace TausendBackend.Api.Business
             var response = new CreatedDeviceResponse();
             try
             {
-                var oldPin = _dao.GetDevicePIN(deviceId);
+                // Scoped to this account: comparing against another user's code for the same
+                // panel made every edit look like a code change, which re-ran the in-use check
+                // and refused the rename (client report, 14 Oct, video 3).
+                var oldPin = _dao.GetDevicePIN(deviceId, accountId);
                 int pinRes;
                 if (oldPin == pin)
                 {

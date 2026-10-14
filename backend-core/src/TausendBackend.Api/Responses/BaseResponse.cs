@@ -36,17 +36,35 @@ namespace TausendBackend.Api.Responses
             Code = 404;
         }
 
+        /// <summary>
+        /// A server fault, reported to the caller as a fixed, human-readable sentence.
+        ///
+        /// The raw text used to be passed straight through, which is how a user ended up staring
+        /// at "Cannot insert the value NULL into column 'DeviceId', table
+        /// 'TausendDB.dbo.AccountDevicePins'..." on the add-panel screen (client report, 14 Oct).
+        /// Besides being meaningless to them, that hands out table and column names to anyone
+        /// willing to provoke an error. The real detail goes to the server log via
+        /// <see cref="ServerErrorDetail"/>, which is where it is useful.
+        /// </summary>
+        public const string ServerErrorMessage = "Ocurrió un error en el servidor. Intenta nuevamente.";
+
+        /// <summary>The underlying failure, for logging only. Never serialised to the client --
+        /// no public getter, so it stays out of the JSON response.</summary>
+        internal string? ServerErrorDetail { get; private set; }
+
         public void InformServerError(string message)
         {
             State = ResponseStates.SERVER_ERROR;
-            Message = message;
+            ServerErrorDetail = message;
+            Message = ServerErrorMessage;
             Code = 11111;
         }
 
         public void InformServerError(Exception e)
         {
             State = ResponseStates.SERVER_ERROR;
-            Message = e.ToString();
+            ServerErrorDetail = e.ToString();
+            Message = ServerErrorMessage;
             Code = 11111;
         }
 

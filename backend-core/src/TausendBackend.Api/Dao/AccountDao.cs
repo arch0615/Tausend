@@ -279,36 +279,45 @@ namespace TausendBackend.Api.Dao
 
         private Account? GetAccountFromReader(SqlDataReader reader)
         {
+            // One row per linked panel, so the account is built once and each row contributes a
+            // device. This used to do `res = new Account {...}` inside the loop, which threw away
+            // everything gathered so far on every row: an account with two panels ended up
+            // reporting only the last one. That is the client's "linking a second panel makes the
+            // first disappear from the selector, and deleting the second brings it back" (14 Oct),
+            // and it also explains why notifications kept arriving for a panel the app could no
+            // longer show -- the link was still there server-side, just never returned.
             Account? res = null;
             while (reader.Read())
             {
                 var accountId = reader.GetInt64(0);
-                if (accountId > 0)
-                {
-                    res = new Account { AccountId = accountId };
-                    res.Email = reader.GetString(1);
-                    res.FirstName = reader.GetString(2);
-                    res.LastName = reader.GetString(3);
-                    res.AccessToken = reader.GetString(4);
-                    var ad = new AccountDevice
-                    {
-                        Description = reader.IsDBNull(5) ? "" : reader.GetString(5),
-                        Mac = reader.IsDBNull(6) ? "" : reader.GetString(6),
-                        Pin = reader.IsDBNull(7) ? "" : reader.GetString(7),
-                        DeviceId = reader.IsDBNull(8) ? 0 : reader.GetInt64(8),
-                        // Was never read here at all -- every device the app ever displayed an
-                        // online/offline status for showed offline regardless of the panel's
-                        // actual, correctly-tracked connection state (see GetDevice.sql, which
-                        // does read this column correctly for command-sending purposes).
-                        IsOnline = !reader.IsDBNull(10) && reader.GetBoolean(10)
-                    };
-                    res.Devices.Add(ad);
-                    res.Role = (AccountRole)reader.GetByte(9);
-                }
-                else
+                if (accountId <= 0)
                 {
                     res = null;
+                    continue;
                 }
+
+                res ??= new Account
+                {
+                    AccountId = accountId,
+                    Email = reader.GetString(1),
+                    FirstName = reader.GetString(2),
+                    LastName = reader.GetString(3),
+                    AccessToken = reader.GetString(4),
+                    Role = (AccountRole)reader.GetByte(9)
+                };
+
+                res.Devices.Add(new AccountDevice
+                {
+                    Description = reader.IsDBNull(5) ? "" : reader.GetString(5),
+                    Mac = reader.IsDBNull(6) ? "" : reader.GetString(6),
+                    Pin = reader.IsDBNull(7) ? "" : reader.GetString(7),
+                    DeviceId = reader.IsDBNull(8) ? 0 : reader.GetInt64(8),
+                    // Was never read here at all -- every device the app ever displayed an
+                    // online/offline status for showed offline regardless of the panel's
+                    // actual, correctly-tracked connection state (see GetDevice.sql, which
+                    // does read this column correctly for command-sending purposes).
+                    IsOnline = !reader.IsDBNull(10) && reader.GetBoolean(10)
+                });
             }
             if (res != null && reader.NextResult())
             {

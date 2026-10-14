@@ -190,42 +190,80 @@ namespace TausendBackend.Api.Migrations
                     @CurrentDateTime DATETIME,
                     @Result BIGINT
 
-                    SELECT @AccountId = ISNULL(AccountID, 0) FROM AccessTokens where AccessToken = @AccessToken
+                SELECT @AccountId = ISNULL(AccountID, 0) FROM AccessTokens WHERE AccessToken = @AccessToken
 
-                    IF @AccountId = 0 BEGIN
-                        SELECT CAST(-1 AS BIGINT)
-                        RETURN 0
-                    END
+                IF ISNULL(@AccountId, 0) = 0 BEGIN
+                    SELECT CAST(-1 AS BIGINT)
+                    RETURN 0
+                END
 
-                    -- D.Enabled = 1: without it, a panel this account deleted or had disabled still reserved
-                    -- its description forever. The account's own panel list is built with an
-                    -- Enabled = 1 join (see CreateLoginSession), so the device was invisible in the
-                    -- app while still blocking its name here -- the client's issue #15, reported as
-                    -- "descripcion repetida" on an account with no panels at all.
-                    SELECT @Val = ISNULL(D.DeviceId, 0) FROM Devices D, AccountDevicePins ADP
-                        WHERE D.Description = @Description AND ADP.DeviceId = D.DeviceId AND ADP.AccountId = @AccountId AND D.Enabled = 1
+                -- D.Enabled = 1: a deleted panel used to keep its description reserved forever
+                -- while being invisible in the account's own list (client issue #15).
+                SELECT @Val = ISNULL(D.DeviceId, 0) FROM Devices D, AccountDevicePins ADP
+                    WHERE D.Description = @Description AND ADP.DeviceId = D.DeviceId AND ADP.AccountId = @AccountId AND D.Enabled = 1
 
-                    IF @Val > 0 BEGIN
-                        SELECT CAST(-2 AS BIGINT)
-                        RETURN 0
-                    END
+                IF ISNULL(@Val, 0) > 0 BEGIN
+                    SELECT CAST(-2 AS BIGINT)
+                    RETURN 0
+                END
 
-                    SELECT @CurrentDateTime = GETUTCDATE()
+                SELECT @CurrentDateTime = GETUTCDATE()
 
-                    SELECT @Result = ISNULL(DeviceId, 0) FROM Devices WHERE Identifier = @Identifier AND Enabled = 1
+                -- This used to be `SELECT @Result = ISNULL(DeviceId, 0) FROM Devices WHERE ...`,
+                -- which looks like it defaults to 0 but does not: when the SELECT matches no rows
+                -- the variable is never assigned and keeps its previous value, NULL. ISNULL only
+                -- rewrites a NULL column inside a row that was actually returned. `IF @Result = 0`
+                -- is then UNKNOWN rather than true, so the device INSERT was skipped and the link
+                -- row went in with a NULL DeviceId, surfacing to the user as the raw SQL error
+                -- "Cannot insert the value NULL into column 'DeviceId'". That is the client's
+                -- "no es posible vincular centrales" from the 14 Oct report.
+                --
+                -- It bites whenever no ENABLED row exists for the identifier, which is exactly
+                -- the state after a panel has been deleted, hence "after unlinking it can never
+                -- be linked again".
+                SET @Result = NULL
+                SELECT TOP 1 @Result = DeviceId FROM Devices
+                    WHERE Identifier = @Identifier AND Enabled = 1
+                    ORDER BY DeviceId DESC
 
-                    IF @Result = 0 BEGIN
-                        INSERT INTO Devices(Description, Identifier, CreatedDateTime, UpdatedDateTime, IsOnline, Enabled, PublicKey) VALUES (@Description, @Identifier, @CurrentDateTime, @CurrentDateTime, 0, 1, @PublicKey)
+                IF @Result IS NULL BEGIN
+                    -- Revive a retired row for the same panel rather than inserting a second one,
+                    -- so a panel keeps one identity across unlink/relink cycles.
+                    SELECT TOP 1 @Result = DeviceId FROM Devices
+                        WHERE Identifier = @Identifier
+                        ORDER BY DeviceId DESC
+
+                    IF @Result IS NULL BEGIN
+                        INSERT INTO Devices(Description, Identifier, CreatedDateTime, UpdatedDateTime, IsOnline, Enabled, PublicKey)
+                            VALUES (@Description, @Identifier, @CurrentDateTime, @CurrentDateTime, 0, 1, @PublicKey)
                         SELECT @Result = CAST(SCOPE_IDENTITY() AS BIGINT)
                     END
                     ELSE BEGIN
-                        UPDATE Devices SET Description = @Description, UpdatedDateTime = @CurrentDateTime WHERE DeviceId = @Result
+                        UPDATE Devices
+                        SET Description = @Description,
+                            Enabled = 1,
+                            DeletedDateTime = NULL,
+                            UpdatedDateTime = @CurrentDateTime,
+                            PublicKey = @PublicKey
+                        WHERE DeviceId = @Result
                     END
-
-                    INSERT INTO AccountDevicePins(AccountId, DeviceId, PIN) VALUES (@AccountId, @Result, @Pin)
-
-                    SELECT @Result
                 END
+                ELSE BEGIN
+                    UPDATE Devices SET Description = @Description, UpdatedDateTime = @CurrentDateTime WHERE DeviceId = @Result
+                END
+
+                IF @Result IS NULL BEGIN
+                    SELECT CAST(-1 AS BIGINT)
+                    RETURN 0
+                END
+
+                -- Re-linking a panel this account already holds replaces its row instead of
+                -- stacking a second one, which would list the same panel twice.
+                DELETE FROM AccountDevicePins WHERE AccountId = @AccountId AND DeviceId = @Result
+                INSERT INTO AccountDevicePins(AccountId, DeviceId, PIN) VALUES (@AccountId, @Result, @Pin)
+
+                SELECT @Result
+            END
             """,
             // The previous single-@DeviceId lookup (no TOP/ORDER BY) only unlinked one arbitrary
             // panel on account deletion -- an account with more than one linked panel left the
