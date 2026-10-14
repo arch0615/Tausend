@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[GetDevicePIN]
+﻿CREATE PROCEDURE [dbo].[GetDevicePIN]
 	@DeviceId BIGINT,
 	@AccountId BIGINT = NULL
 AS BEGIN
@@ -16,5 +16,10 @@ AS BEGIN
 	SELECT TOP 1 ISNULL(PIN, '') FROM AccountDevicePins
 	WHERE DeviceId = @DeviceId
 	  AND (@AccountId IS NULL OR AccountId = @AccountId)
-	ORDER BY CASE WHEN AccountId = @AccountId THEN 0 ELSE 1 END, PinId
+	-- PinId DESC, not ASC. @AccountId IS NULL makes the CASE above evaluate to 1 for every row
+	-- (AccountId = NULL is UNKNOWN), so the tiebreak decided the unscoped result on its own and
+	-- ascending meant the OLDEST link row won. On a panel that had been paired more than once,
+	-- or shared between accounts, that is a stale code: the command path then sent it to the
+	-- panel, which obeyed it and attributed the event to whichever user that code belongs to.
+	ORDER BY CASE WHEN AccountId = @AccountId THEN 0 ELSE 1 END, PinId DESC
 END

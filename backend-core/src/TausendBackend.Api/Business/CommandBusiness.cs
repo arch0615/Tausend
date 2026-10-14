@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.Json;
 using TausendBackend.Api.Dao;
 using TausendBackend.Api.Enums;
@@ -84,7 +84,7 @@ namespace TausendBackend.Api.Business
             try
             {
                 var device = _deviceDao.GetDevice(commandRequest.DeviceId, 0);
-                var pin = device != null ? _deviceDao.GetDevicePIN(commandRequest.DeviceId) : null;
+                var pin = device != null ? PinFor(commandRequest.DeviceId, commandRequest.AccessToken) : null;
                 var body = new { cmd = COMMANDS.BYPASS, identifier = device?.Identifier, pin, zones = commandRequest.Zones };
                 var res = await ExecuteAsync("BYPCommand", body);
                 return GetStatus(res);
@@ -97,7 +97,7 @@ namespace TausendBackend.Api.Business
             try
             {
                 var device = _deviceDao.GetDevice(commandRequest.DeviceId, 0);
-                var pin = device != null ? _deviceDao.GetDevicePIN(commandRequest.DeviceId) : null;
+                var pin = device != null ? PinFor(commandRequest.DeviceId, commandRequest.AccessToken) : null;
                 var body = new { cmd = COMMANDS.PROGRAM_CONTROL, identifier = device?.Identifier, pin, zone = commandRequest.Zone, state = commandRequest.State };
                 await ExecuteAsync("PGMCommand", body);
                 return "OK";
@@ -269,8 +269,32 @@ namespace TausendBackend.Api.Business
         private object CreateBody(string command, string accessToken, long deviceId)
         {
             var device = _deviceDao.GetDevice(deviceId, 0);
-            var pin = device != null ? _deviceDao.GetDevicePIN(deviceId) : null;
+            var pin = device != null ? PinFor(deviceId, accessToken) : null;
             return new { cmd = command, identifier = device?.Identifier, pin };
+        }
+
+        /// <summary>
+        /// The code sent to the panel with this command, belonging to the account making the
+        /// call. This used to be an unscoped GetDevicePIN(deviceId), which returned whichever
+        /// link row came back first for the panel rather than the caller's own. The panel does
+        /// not just accept or reject that code, it identifies the user by it and writes that user
+        /// into its event log, so sending another account's code (or a stale one left behind by
+        /// an earlier pairing) made every action appear under the wrong user and made a panel
+        /// keep answering a code the caller thought they had changed. Both are client reports.
+        ///
+        /// Falls back to the unscoped read when the caller has no link row of their own, which
+        /// keeps an Admin acting on someone else's panel working as before.
+        /// </summary>
+        private string PinFor(long deviceId, string? accessToken)
+        {
+            var accountId = _accountBusiness.ResolveAccountId(accessToken ?? "");
+            if (accountId > 0)
+            {
+                var own = _deviceDao.GetDevicePIN(deviceId, accountId);
+                if (!string.IsNullOrEmpty(own))
+                    return own;
+            }
+            return _deviceDao.GetDevicePIN(deviceId);
         }
 
         /// <summary>Raw response body -- callers that parse via GetStatus/GetVersion/etc. want the

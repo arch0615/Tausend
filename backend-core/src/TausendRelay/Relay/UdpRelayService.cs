@@ -239,6 +239,12 @@ namespace TausendRelay.Relay
             var safe = text;
             if (!string.IsNullOrEmpty(pin) && safe.EndsWith(CommandCodes.ParamsChar + pin, StringComparison.Ordinal))
                 safe = safe[..^pin.Length] + "****";
+            // DeviceBusiness.ValidatePinOnDevice asks the panel "USR<code>" to check whether a
+            // code exists, with no separator before the value, so the suffix rules below miss it.
+            // Masked only where the code actually appears, which leaves the panel's own USR reply
+            // readable: that answer is how we learn which user slot a code belongs to.
+            if (!string.IsNullOrEmpty(pin) && safe.StartsWith("USR", StringComparison.Ordinal))
+                safe = safe.Replace(pin, "****");
             // The raw-command path (SendCommandToIdentifier hands the relay a pre-built string)
             // can carry a code while the pin argument is empty, so mask a digits-only tail on the
             // two verbs that take one regardless of what pin says.

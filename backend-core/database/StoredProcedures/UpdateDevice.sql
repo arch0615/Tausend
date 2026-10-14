@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[UpdateDevice]
+﻿CREATE PROCEDURE [dbo].[UpdateDevice]
 	@DeviceId BIGINT,
 	@Description NVARCHAR(255),
 	@Identifier NVARCHAR(255),
@@ -37,9 +37,12 @@ AS BEGIN
 	UpdatedDateTime = @CurrentDateTime
 	WHERE DeviceId = @DeviceId
 
+	-- Scoped to the caller. Without the AccountId filter this overwrote the saved code of
+	-- EVERY account linked to the panel, so one user editing their own code silently replaced
+	-- it for everyone else sharing that central.
 	UPDATE AccountDevicePins
 	SET PIN = @Pin
-	WHERE DeviceId = @DeviceId
+	WHERE DeviceId = @DeviceId AND AccountId = @AccountId
 
 	SELECT @DeviceId
 END

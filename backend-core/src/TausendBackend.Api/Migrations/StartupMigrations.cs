@@ -1,4 +1,4 @@
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 
 namespace TausendBackend.Api.Migrations
 {
@@ -503,6 +503,79 @@ namespace TausendBackend.Api.Migrations
 
                 SELECT D.DeviceId, D.Identifier, D.Description, D.IP, D.Port, D.IsOnline, D.LastConnection, D.PublicKey FROM Devices D WHERE DeviceId = @DeviceId
 
+            END
+            """,
+
+            // GetDevicePIN and UpdateDevice were both fixed in database/StoredProcedures but
+            // neither was ever listed here, and this file is the only thing that reaches the
+            // deployed database at boot -- so both fixes would have shipped as dead files.
+            //
+            // GetDevicePIN: the command path (CommandBusiness.CreateBody) reads the code that
+            // gets sent to the panel. Unscoped, the tiebreak used to be PinId ascending, which
+            // returned the OLDEST link row for the panel: a stale code from an earlier pairing,
+            // or another account's code on a shared central. The panel obeys whatever valid code
+            // it is given and logs the event against the user that code belongs to, which is the
+            // client's "events show the wrong user" and their "the panel still answers after the
+            // user code was changed" -- the code being sent was never the caller's own.
+            """
+            CREATE OR ALTER PROCEDURE [dbo].[GetDevicePIN]
+                @DeviceId BIGINT,
+                @AccountId BIGINT = NULL
+            AS BEGIN
+                SET NOCOUNT ON
+                SELECT TOP 1 ISNULL(PIN, '') FROM AccountDevicePins
+                WHERE DeviceId = @DeviceId
+                  AND (@AccountId IS NULL OR AccountId = @AccountId)
+                ORDER BY CASE WHEN AccountId = @AccountId THEN 0 ELSE 1 END, PinId DESC
+            END
+            """,
+
+            // UpdateDevice: the AccountDevicePins update had no AccountId filter, so one user
+            // saving their own code overwrote the stored code of every other account linked to
+            // the same panel.
+            """
+            CREATE OR ALTER PROCEDURE [dbo].[UpdateDevice]
+                @DeviceId BIGINT,
+                @Description NVARCHAR(255),
+                @Identifier NVARCHAR(255),
+                @Pin NVARCHAR(15),
+                @AccountId BIGINT
+            AS BEGIN
+                SET NOCOUNT ON
+
+                DECLARE @CurrentDateTime DATETIME,
+                    @Val BIGINT
+
+                IF NOT EXISTS (
+                    SELECT 1 FROM Devices D
+                    INNER JOIN AccountDevicePins ADP ON ADP.DeviceId = D.DeviceId
+                    WHERE D.DeviceId = @DeviceId AND D.Enabled = 1 AND ADP.AccountId = @AccountId
+                ) BEGIN
+                    SELECT CAST(-1 AS BIGINT)
+                    RETURN 0
+                END
+
+                SELECT @Val = ISNULL(D.DeviceId, 0) FROM Devices D, AccountDevicePins ADP
+                WHERE D.Description = @Description AND ADP.DeviceId = D.DeviceId AND D.DeviceId <> @DeviceId AND AccountId = @AccountId
+
+                IF @Val > 0 BEGIN
+                    SELECT CAST(-2 AS BIGINT)
+                    RETURN 0
+                END
+
+                SELECT @CurrentDateTime = GETUTCDATE()
+
+                UPDATE Devices
+                SET Description = @Description,
+                Identifier = @Identifier,
+                UpdatedDateTime = @CurrentDateTime
+                WHERE DeviceId = @DeviceId
+
+                UPDATE AccountDevicePins
+                SET PIN = @Pin
+                WHERE DeviceId = @DeviceId AND AccountId = @AccountId
+
+                SELECT @DeviceId
             END
             """,
         };
