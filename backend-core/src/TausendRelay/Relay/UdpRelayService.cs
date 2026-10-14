@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -222,6 +222,51 @@ namespace TausendRelay.Relay
 
         private static bool IsHex(string s) => s.All(Uri.IsHexDigit);
 
+        /// <summary>
+        /// Command or reply text as it should appear in the log. Panel traffic carries
+        /// credentials: ARM/DAR append the user code after ':', and a PRG write can carry the
+        /// panel's installer code (section 003) or the home Wi-Fi password (351). The verb, the
+        /// section and whether a value was written is all a diagnosis needs, so the value itself
+        /// is replaced by its length and the user code never reaches the log at all.
+        /// </summary>
+        private static string ForLog(string? text, string? pin)
+        {
+            if (string.IsNullOrEmpty(text))
+                return "";
+            // Only ArmCommand and DisarmCommand carry the user code, both as a trailing
+            // ":<code>". Masking that exact suffix instead of every occurrence of the value keeps
+            // a short code from mangling an unrelated digit run, e.g. the 012 in PRG012.
+            var safe = text;
+            if (!string.IsNullOrEmpty(pin) && safe.EndsWith(CommandCodes.ParamsChar + pin, StringComparison.Ordinal))
+                safe = safe[..^pin.Length] + "****";
+            // The raw-command path (SendCommandToIdentifier hands the relay a pre-built string)
+            // can carry a code while the pin argument is empty, so mask a digits-only tail on the
+            // two verbs that take one regardless of what pin says.
+            var colon = safe.LastIndexOf(':');
+            if (colon > 0
+                && (safe.StartsWith(CommandCodes.Arm, StringComparison.Ordinal)
+                    || safe.StartsWith(CommandCodes.Disarm, StringComparison.Ordinal)))
+            {
+                var tail = safe[(colon + 1)..].TrimEnd('>');
+                if (tail.Length > 0 && tail.All(char.IsDigit))
+                    safe = safe[..(colon + 1)] + "****";
+            }
+            // PRG<section> followed by ':' or 'h' and a value -- keep everything up to the
+            // separator, swap the value for its length.
+            var i = safe.IndexOf("PRG", StringComparison.Ordinal);
+            if (i >= 0 && safe.Length > i + 6)
+            {
+                var sep = i + 6;
+                if (safe[sep] == ':' || safe[sep] == 'h')
+                {
+                    var value = safe[(sep + 1)..].TrimEnd('>');
+                    if (value.Length > 0)
+                        safe = safe[..(sep + 1)] + "<" + value.Length + " chars>";
+                }
+            }
+            return safe;
+        }
+
         private static bool DecodeMessage(string message, out int destine, out int source, out MessageType messageType, out string payload)
         {
             destine = 0;
@@ -401,6 +446,11 @@ namespace TausendRelay.Relay
                 await _sendLock.WaitAsync();
                 try
                 {
+                    // Outgoing commands used to be logged only when they threw, so a panel that
+                    // quietly ignored a write left no trace and there was no way to tell whether
+                    // the app had sent the wrong thing or the panel had dropped a correct one.
+                    // Both halves are logged now, credentials masked by ForLog.
+                    _logger.LogInformation("CMD to {Identifier} => {Command}", identifier, ForLog(txt, pin));
                     SendMessage(cmd, endpoint);
                     if (responseType != CommandResponseType.None)
                     {
@@ -432,6 +482,7 @@ namespace TausendRelay.Relay
                 {
                     _sendLock.Release();
                 }
+                _logger.LogInformation("CMD reply from {Identifier} for {Command} => {Reply}", identifier, ForLog(txt, pin), ForLog(res, pin));
                 return res;
             }
             catch (Exception e)
