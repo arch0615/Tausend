@@ -351,11 +351,11 @@ function IpHome({
 
       {!loading && status && (status.memo || status.bypass || status.fail) && (
         <View style={styles.badgeRow}>
-          {status.memo && <InfoBadge icon="💾" label={t('Memory')} tone="neutral" onPress={() => navigation.navigate('Memory')} />}
+          {status.memo && <InfoBadge icon="▤" label={t('Memory')} tone="neutral" onPress={() => navigation.navigate('Memory')} />}
           {status.bypass && (
-            <InfoBadge icon="🚩" label={t('Zones excluded')} tone="warning" onPress={() => navigation.navigate('Exclusions')} />
+            <InfoBadge icon="⚑" label={t('Zones excluded')} tone="warning" onPress={() => navigation.navigate('Exclusions')} />
           )}
-          {status.fail && <InfoBadge icon="⚠️" label={t('Fault')} tone="danger" onPress={() => navigation.navigate('Failures')} />}
+          {status.fail && <InfoBadge icon="⚠" label={t('Fault')} tone="danger" onPress={() => navigation.navigate('Failures')} />}
         </View>
       )}
 
@@ -610,9 +610,14 @@ function InfoBadge({
 }) {
   const { colors, typography, radius } = useTheme();
   const bg = tone === 'danger' ? colors.dangerBg : tone === 'warning' ? colors.warningBg : colors.panel;
+  // Each glyph is tinted to its badge's own tone, so Memoria/Exclusiones/Fallas read as one set
+  // rather than three unrelated pictures. They used to be emoji, which every Android skin draws
+  // in its own style and palette -- that is what the client meant by "los iconos de fallas,
+  // exclusiones y memorias deben ser iguales".
+  const iconColor = tone === 'danger' ? colors.danger : tone === 'warning' ? colors.warning : colors.accent;
   const badge = (
     <View style={[styles.badge, { backgroundColor: bg, borderColor: colors.line, borderRadius: radius.md }]}>
-      <Text style={styles.badgeIcon}>{icon}</Text>
+      <Text style={[styles.badgeIcon, { color: iconColor }]}>{icon}</Text>
       <Text style={[typography.body, { color: colors.ink, fontWeight: '700' }]}>{label}</Text>
     </View>
   );

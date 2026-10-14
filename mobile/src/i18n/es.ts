@@ -102,7 +102,7 @@ export const es: Record<string, string> = {
   Hide: 'Ocultar',
   Emergency: 'Emergencia',
   Panic: 'Pánico',
-  Duress: 'Coacción',
+  Duress: 'Asalto Silencioso',
   'Zones excluded': 'Exclusiones',
   Fault: 'Fallas',
   "The panel isn't responding. Pull to refresh or tap below to try again.":

@@ -16,10 +16,17 @@ import type { MainStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'CreateDevice'>;
 
-// Exact string backend-core's DeviceController.CreateDevice returns for a wrong PIN (as opposed
-// to "Central offline o inexistente", which shares the same Code 400 but shouldn't count against
-// the lockout below -- see Business/DeviceBusiness.cs's ValidatePinOnDevice).
-const WRONG_PIN_MESSAGE = 'PIN incorrecto';
+// The exact strings backend-core's DeviceController.CreateDevice returns for a wrong user code,
+// as opposed to "Central offline o inexistente", which shares the same Code 400 but must not
+// count against the lockout below (see Business/DeviceBusiness.cs's ValidatePinOnDevice).
+//
+// Both spellings are listed on purpose. The wording changed from "PIN" to "código de usuario" at
+// the client's request, and the app and the backend ship separately: a phone carrying this build
+// can be talking to a server that has not been redeployed yet, and vice versa. Matching only the
+// new text would silently stop counting attempts against an older server -- the retry limit would
+// never trigger and the user would just see a generic failure. Matching on message text at all is
+// fragile; a dedicated response code would be better, but that is a backend contract change.
+const WRONG_PIN_MESSAGES = ['Código de usuario incorrecto', 'PIN incorrecto'];
 
 export function CreateDeviceScreen({ navigation }: Props) {
   const { colors, typography, spacing } = useTheme();
@@ -90,7 +97,7 @@ export function CreateDeviceScreen({ navigation }: Props) {
         logout();
         return;
       }
-      if (res.Code === 400 && res.Message === WRONG_PIN_MESSAGE) {
+      if (res.Code === 400 && WRONG_PIN_MESSAGES.includes(res.Message)) {
         const count = await incrementPinRetryCount();
         const left = Math.max(0, MAX_PIN_RETRIES - count);
         if (count >= MAX_PIN_RETRIES) {
