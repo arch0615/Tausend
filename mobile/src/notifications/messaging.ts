@@ -9,6 +9,7 @@ import {
   requestPermission,
   setBackgroundMessageHandler,
 } from '@react-native-firebase/messaging';
+import notifee, { AndroidImportance } from '@notifee/react-native';
 import { Alert, Platform, Vibration } from 'react-native';
 import { registerDeviceToken } from '../api/notifications';
 import { requestNotificationPermission } from './permissions';
@@ -116,6 +117,30 @@ export function subscribeToForegroundMessages(): () => void {
     if (!title && !body) return;
     const urgent = URGENT_NOTIFICATION_TYPES.has(message.data?.type as string);
     if (urgent) {
+      // Raise a real notification on the alarm channel, which is what actually plays the siren.
+      //
+      // Neither platform shows a system notification for a push that lands while the app is
+      // already open, so an alarm arriving in the foreground was silent -- the client's "el pánico
+      // no hace nada si la app está abierta". The siren lives on the my_channel_id channel
+      // (res/raw/alert.mp3, created in MainApplication.kt), so posting through that same channel
+      // gets the sound, the heads-up banner and the vibration pattern the OS would normally give
+      // us, instead of trying to play the audio separately and drifting from what a backgrounded
+      // alarm sounds like.
+      notifee
+        .displayNotification({
+          title: title || undefined,
+          body: body || undefined,
+          android: {
+            channelId: 'my_channel_id',
+            importance: AndroidImportance.HIGH,
+            smallIcon: 'ic_notification',
+            pressAction: { id: 'default' },
+          },
+        })
+        .catch(() => {
+          // Best-effort: the dialog and vibration below still fire, so a failure here degrades
+          // rather than losing the alert entirely.
+        });
       // Alert.alert on its own is silent, and it can also end up behind whatever modal is
       // already on screen -- after a panic/emergency trigger that is the location share sheet,
       // opened a moment earlier by the same action (see HomeScreen's runTrigger). So an alarm
