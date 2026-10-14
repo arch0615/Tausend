@@ -251,6 +251,8 @@ export const es: Record<string, string> = {
   'Could not link the panel.': 'No se pudo vincular la central.',
   "Too many incorrect PIN attempts. Go back and confirm the panel's identifier and PIN before trying again.":
     'Demasiados intentos con un código de usuario incorrecto. Regresa y confirma el identificador y el código de usuario de la central antes de intentar de nuevo.',
+  'Too many incorrect attempts for this panel. You can try again in {minutes} minutes.':
+    'Demasiados intentos incorrectos para esta central. Puedes volver a intentarlo en {minutes} minutos.',
   'Panel identifier': 'Identificador',
   'User code (4 digits)': 'Código de Usuario',
   'Panel description': 'Descripción',

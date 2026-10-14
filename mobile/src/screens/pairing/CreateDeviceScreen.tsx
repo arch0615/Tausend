@@ -11,7 +11,13 @@ import { FormField } from '../../components/FormField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Banner } from '../../components/Banner';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
-import { getPinRetryCount, incrementPinRetryCount, resetPinRetryCount, MAX_PIN_RETRIES } from '../../pairing/pinRetryStore';
+import {
+  getPinRetryCount,
+  incrementPinRetryCount,
+  resetPinRetryCount,
+  pinRetryCooldownRemaining,
+  MAX_PIN_RETRIES,
+} from '../../pairing/pinRetryStore';
 import type { MainStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'CreateDevice'>;
@@ -38,17 +44,28 @@ export function CreateDeviceScreen({ navigation }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lockedOut, setLockedOut] = useState(false);
+  // Minutes until the limit lifts, so the banner can say when rather than reading as permanent.
+  const [cooldownMins, setCooldownMins] = useState(0);
 
+  // Re-checked whenever the identifier changes, because the limit is now counted per panel
+  // rather than once for the whole device -- a wrong code for one panel must not block another.
   useEffect(() => {
     (async () => {
       try {
-        const count = await getPinRetryCount();
-        if (count >= MAX_PIN_RETRIES) setLockedOut(true);
+        if (!identifier.trim()) {
+          setLockedOut(false);
+          return;
+        }
+        const count = await getPinRetryCount(identifier);
+        setLockedOut(count >= MAX_PIN_RETRIES);
+        const remaining = await pinRetryCooldownRemaining(identifier);
+        setCooldownMins(Math.max(1, Math.ceil(remaining / 60000)));
       } catch {
         // Fail open -- if the local retry count can't be read, don't falsely lock the user out.
+        setLockedOut(false);
       }
     })();
-  }, []);
+  }, [identifier]);
 
   function handleSubmit() {
     if (!description.trim()) {
@@ -84,7 +101,7 @@ export function CreateDeviceScreen({ navigation }: Props) {
       // always rendered blank.
       const res = await createDevice(description.trim(), identifier.trim(), pin, session?.account.Email);
       if (res.Code === 0 && res.State === ResponseState.OK) {
-        await resetPinRetryCount();
+        await resetPinRetryCount(identifier);
         // So the new panel shows up immediately in the selector/Home instead of waiting for
         // the next full app launch (session.account.Devices is otherwise only refreshed then).
         await refreshSession();
@@ -98,7 +115,7 @@ export function CreateDeviceScreen({ navigation }: Props) {
         return;
       }
       if (res.Code === 400 && WRONG_PIN_MESSAGES.includes(res.Message)) {
-        const count = await incrementPinRetryCount();
+        const count = await incrementPinRetryCount(identifier);
         const left = Math.max(0, MAX_PIN_RETRIES - count);
         if (count >= MAX_PIN_RETRIES) {
           setLockedOut(true);
@@ -137,7 +154,9 @@ export function CreateDeviceScreen({ navigation }: Props) {
 
         {lockedOut ? (
           <Banner kind="error">
-            {t("Too many incorrect PIN attempts. Go back and confirm the panel's identifier and PIN before trying again.")}
+            {t('Too many incorrect attempts for this panel. You can try again in {minutes} minutes.', {
+              minutes: cooldownMins,
+            })}
           </Banner>
         ) : (
           <>
