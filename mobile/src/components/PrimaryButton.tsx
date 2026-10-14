@@ -45,7 +45,12 @@ export function PrimaryButton({ title, onPress, disabled, loading, tone = 'accen
           styles.button,
           {
             backgroundColor: outline ? 'transparent' : fill,
-            borderWidth: outline ? 1.5 : 0,
+            // Every tone carries the same border width, transparent when it isn't an outline
+            // button. A border adds to a view's height, so giving it only to the outline tone made
+            // it visibly taller than the filled button beside it -- measured 135px against 127px
+            // for the Añadir Equipo / Cancelar pair. Keeping the width constant and varying only
+            // the colour keeps side-by-side buttons the same size.
+            borderWidth: 1.5,
             borderColor: outline ? colors.accent : 'transparent',
             borderRadius: radius.sm,
             paddingVertical: spacing.md + 2,
