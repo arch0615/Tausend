@@ -33,3 +33,17 @@ export function describeCommandException(e: unknown, t: (key: string) => string)
   }
   return t('Could not reach the server.');
 }
+
+/**
+ * Did the panel itself actually answer, as opposed to the request merely completing?
+ *
+ * These are not the same thing, and conflating them is what kept the connection indicator
+ * showing "Conectada" after a panel had lost its link to the server (client report, 14 Oct). The
+ * backend returns HTTP 200 with either CENTRAL_UNRESPONSIVE or an empty Text when the relay got
+ * nothing back from the panel, so "we received a response object" says nothing about whether the
+ * hardware is reachable. Only a reply with real content does.
+ */
+export function panelAnswered(res: Pick<BaseResponse, 'State'> & { Text?: string | null }): boolean {
+  if (res.State === ResponseState.CENTRAL_UNRESPONSIVE) return false;
+  return !!res.Text && res.Text.trim() !== '';
+}

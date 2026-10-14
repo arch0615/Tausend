@@ -44,7 +44,17 @@ namespace TausendBackend.Api.Migrations
                 SET NOCOUNT ON
                 DECLARE @TokenGuid UNIQUEIDENTIFIER = TRY_CAST(@AccessToken AS UNIQUEIDENTIFIER)
 
-                SELECT AT.AccountID, Email, FirstName, LastName, CAST(@AccessToken AS CHAR(36)), D.Description, D.Identifier, ADP.PIN, D.DeviceId, A.Role, D.IsOnline
+                -- IsOnline is a flag the relay sets when a panel connects. Nothing clears it if the
+                -- panel simply stops talking, so a panel that dropped off hours ago still reported
+                -- itself online and the device selector kept showing "En línea" / "Conectada"
+                -- (client report, 14 Oct). GetDeviceByIdentifier already guards against this with a
+                -- one-hour freshness window; the same rule is applied here so the account's own
+                -- panel list cannot disagree with it. A panel that has never connected
+                -- (LastConnection NULL) counts as offline.
+                SELECT AT.AccountID, Email, FirstName, LastName, CAST(@AccessToken AS CHAR(36)), D.Description, D.Identifier, ADP.PIN, D.DeviceId, A.Role,
+                       CASE WHEN D.IsOnline = 1 AND D.LastConnection IS NOT NULL
+                                 AND D.LastConnection > DATEADD(HOUR, -1, GETUTCDATE())
+                            THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END
                 FROM Accounts A
                 LEFT JOIN AccessTokens AT ON AT.AccountID = A.AccountId
                 LEFT JOIN AccountDevicePins ADP ON ADP.AccountId = AT.AccountID
@@ -99,7 +109,17 @@ namespace TausendBackend.Api.Migrations
                     VALUES (@RefreshToken, @AccountID, @CurrentUTCDateTime, DATEADD(DAY, 90, @CurrentUTCDateTime))
                 END
 
-                SELECT @AccountID, @Email, FirstName, LastName, CAST(@AccessToken AS CHAR(36)), D.Description, D.Identifier, ADP.PIN, D.DeviceId, A.Role, D.IsOnline
+                -- IsOnline is a flag the relay sets when a panel connects. Nothing clears it if the
+                -- panel simply stops talking, so a panel that dropped off hours ago still reported
+                -- itself online and the device selector kept showing "En línea" / "Conectada"
+                -- (client report, 14 Oct). GetDeviceByIdentifier already guards against this with a
+                -- one-hour freshness window; the same rule is applied here so the account's own
+                -- panel list cannot disagree with it. A panel that has never connected
+                -- (LastConnection NULL) counts as offline.
+                SELECT @AccountID, @Email, FirstName, LastName, CAST(@AccessToken AS CHAR(36)), D.Description, D.Identifier, ADP.PIN, D.DeviceId, A.Role,
+                       CASE WHEN D.IsOnline = 1 AND D.LastConnection IS NOT NULL
+                                 AND D.LastConnection > DATEADD(HOUR, -1, GETUTCDATE())
+                            THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END
                 FROM Accounts A
                 LEFT JOIN AccountDevicePins ADP ON ADP.AccountId = @AccountId
                 LEFT JOIN Devices D ON D.DeviceId = ADP.DeviceId AND D.Enabled = 1

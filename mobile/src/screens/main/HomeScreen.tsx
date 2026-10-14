@@ -20,7 +20,7 @@ import {
 } from '../../api/command';
 import { ResponseState, type CommandResponse } from '../../api/types';
 import { STATUS_TOKEN_MESSAGE_KEY, parseStatus, statusTokens, type ArmMode, type ParsedStatus } from '../../panels/statusParser';
-import { describeCommandException, describeCommandFailure } from '../../panels/commandFeedback';
+import { describeCommandException, describeCommandFailure, panelAnswered } from '../../panels/commandFeedback';
 import { SmsCommands } from '../../pairing/smsCommands';
 import { openSmsComposer } from '../../pairing/smsIntent';
 import { PrimaryButton } from '../../components/PrimaryButton';
@@ -153,6 +153,12 @@ function IpHome({
     setLoading(true);
     let lastResponse: Awaited<ReturnType<typeof getGeneralStatus>> | null = null;
     let lastException: unknown = null;
+    // Did the PANEL itself answer, as opposed to the request merely completing? The two are not
+    // the same: the backend happily returns 200 with CENTRAL_UNRESPONSIVE or an empty Text when
+    // the panel is unreachable. Tracking only `lastResponse` treated that as success and reported
+    // the panel online, which is why the connection indicator kept saying "Conectada" after a
+    // panel lost its link to the server (client report, 14 Oct, video 5).
+    let answered = false;
     for (let attempt = 0; attempt < STATUS_MAX_ATTEMPTS; attempt++) {
       try {
         const res = await getGeneralStatus(deviceIdRef.current);
@@ -164,8 +170,10 @@ function IpHome({
         }
         lastResponse = res;
         lastException = null;
-        const noResponse = res.State === ResponseState.CENTRAL_UNRESPONSIVE || !res.Text || res.Text.trim() === '';
-        if (!noResponse) break;
+        if (panelAnswered(res)) {
+          answered = true;
+          break;
+        }
       } catch (e) {
         lastResponse = null;
         lastException = e;
@@ -173,12 +181,12 @@ function IpHome({
       if (attempt < STATUS_MAX_ATTEMPTS - 1) await delay(STATUS_RETRY_DELAY_MS);
     }
     setLoading(false);
-    if (!lastResponse) {
+    if (!lastResponse || !answered) {
       setError(lastException ? describeCommandException(lastException, t) : t("The panel isn't responding -- it may be offline."));
       setStatus(null);
       // Every retry above is exhausted at this point, so this is a real "cannot reach it", not a
-      // single dropped packet. See PanelContext.reportReachability for why the connection
-      // indicator can't just keep trusting the login-time flag.
+      // single dropped packet. Covers both a transport failure (no response at all) and a
+      // response that came back saying the panel never replied.
       reportReachability('ip', deviceIdRef.current, false);
       return;
     }
