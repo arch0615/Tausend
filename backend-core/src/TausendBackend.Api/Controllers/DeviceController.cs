@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using TausendBackend.Api.Business;
 using TausendBackend.Api.Enums;
 using TausendBackend.Api.Models;
@@ -274,7 +274,14 @@ namespace TausendBackend.Api.Controllers
             return _deviceBusiness.DeleteDeviceSMS(device.DeviceId, accountId);
         }
 
+        // Both spellings route here on purpose. The mobile app and the legacy UDP listener
+        // call the original misspelled "DissasociateCentral" UriTemplate, while the ported
+        // relay calls the correct one. Registering only one of them means a panel factory
+        // reset (event E000-001) 404s on its way to the backend and every account link
+        // survives the reset, which is exactly what the client saw: the keypad unlink-all
+        // sequence appeared to do nothing.
         [HttpPost("DissasociateCentral")]
+        [HttpPost("DisassociateCentral")]
         public DisassociateCentralResponse DisassociateCentral(DeviceDisassociate device)
         {
             var accountId = _accountBusiness.ResolveAccountId(device.AccessToken ?? "");
