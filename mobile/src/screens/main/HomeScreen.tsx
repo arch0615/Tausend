@@ -38,6 +38,41 @@ import type { MainStackParamList } from '../../navigation/types';
 // intended safe/vault meaning).
 const PANIC_ICON = require('../../assets/images/icon-panic-bell.png');
 const DURESS_ICON = require('../../assets/images/icon-duress-safe.png');
+// Memoria / Exclusiones / Fallas, lifted from the previous app's own assets (memory.svg,
+// browser_not_supported.svg, error_outline.svg). The client has asked twice for these three to
+// match the app they actually use -- "los iconos de fallas, exclusiones y memorias deben ser
+// iguales (ya fue solicitado en otras ocasiones)". An earlier reading took that to mean
+// "consistent with each other", which is why they became tinted glyphs; they meant the old app's
+// icons. EMERGENCY_ICON is that app's warning.svg, replacing the one emoji still left among the
+// three action cards.
+const MEMORY_ICON = require('../../assets/images/icon-memory.png');
+const EXCLUSIONS_ICON = require('../../assets/images/icon-exclusions.png');
+const FAILURES_ICON = require('../../assets/images/icon-failures.png');
+const EMERGENCY_ICON = require('../../assets/images/icon-emergency-megaphone.png');
+// The dashboard's own state icons, from the same previous-app asset set: lock_open (ready),
+// house (away), wb_sunny (day), nights_stay (night) and central (the panel pill). The siren
+// frames beside them were already imported from that app in an earlier round and are pixel
+// identical to its notifications_active0-3, so these finish a set that was left half done in
+// emoji. The three states the old dashboard has no equivalent for (not ready, command error, no
+// response) keep their glyph.
+const READY_ICON = require('../../assets/images/icon-ready-shield.png');
+const AWAY_ICON = require('../../assets/images/icon-mode-away.png');
+const DAY_ICON = require('../../assets/images/icon-mode-day.png');
+const NIGHT_ICON = require('../../assets/images/icon-mode-night.png');
+const PANEL_ICON = require('../../assets/images/icon-panel.png');
+
+// home.page.scss's .fail-button and its ion-label, verbatim: the size the client asked for in
+// both rounds ("deben ser como los de la APP en uso (la anterior)").
+const INFO_BUTTON = {
+  width: 77,
+  height: 50,
+  background: '#fafafa',
+  border: '#f2f3f3',
+  radius: 4,
+  labelColor: '#0D455C',
+  labelSize: 10,
+  iconSize: 26,
+};
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Home'>;
 
@@ -351,11 +386,15 @@ function IpHome({
 
       {!loading && status && (status.memo || status.bypass || status.fail) && (
         <View style={styles.badgeRow}>
-          {status.memo && <InfoBadge icon="▤" label={t('Memory')} tone="neutral" onPress={() => navigation.navigate('Memory')} />}
-          {status.bypass && (
-            <InfoBadge icon="⚑" label={t('Zones excluded')} tone="warning" onPress={() => navigation.navigate('Exclusions')} />
+          {status.memo && (
+            <InfoBadge iconSource={MEMORY_ICON} label={t('Memory')} onPress={() => navigation.navigate('Memory')} />
           )}
-          {status.fail && <InfoBadge icon="⚠" label={t('Fault')} tone="danger" onPress={() => navigation.navigate('Failures')} />}
+          {status.bypass && (
+            <InfoBadge iconSource={EXCLUSIONS_ICON} label={t('Zones excluded')} onPress={() => navigation.navigate('Exclusions')} />
+          )}
+          {status.fail && (
+            <InfoBadge iconSource={FAILURES_ICON} label={t('Fault')} onPress={() => navigation.navigate('Failures')} />
+          )}
         </View>
       )}
 
@@ -406,7 +445,7 @@ function IpHome({
         />
       </View>
       <ActionCard
-        icon="📢"
+        iconSource={EMERGENCY_ICON}
         label={t('Emergency')}
         onPress={() => confirmTrigger('emergency', () => emergency(deviceIdRef.current))}
         loading={triggerPending === 'emergency'}
@@ -485,7 +524,7 @@ function StatusCard({
 
   if (!status) return null;
 
-  const { topCaption, label, icon, color, bg } = describeStatus(status, colors, t);
+  const { topCaption, label, icon, iconSource, color, bg } = describeStatus(status, colors, t) as ReturnType<typeof describeStatus> & { icon?: string; iconSource?: number };
   const pulseBg = pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [SIREN_PULSE_COLOR_FROM, SIREN_PULSE_COLOR_TO] });
 
   return (
@@ -507,6 +546,8 @@ function StatusCard({
       )}
       {status.bell ? (
         <Image source={SIREN_WAVE_FRAMES[waveFrame]} style={styles.sirenWaveIcon} resizeMode="contain" />
+      ) : iconSource ? (
+        <Image source={iconSource} style={styles.statusIconImage} resizeMode="contain" />
       ) : (
         <Text style={styles.statusIcon}>{icon}</Text>
       )}
@@ -526,12 +567,13 @@ function describeStatus(
 ) {
   if (status.bell) return { label: t('Siren active'), icon: '🚨', color: colors.accentInk, bg: colors.danger };
   if (status.armMode === 'stay')
-    return { topCaption: t('Armed'), label: t('Day mode'), icon: '☀️', color: colors.accentInk, bg: colors.danger };
+    return { topCaption: t('Armed'), label: t('Day mode'), iconSource: DAY_ICON, color: colors.accentInk, bg: colors.danger };
   if (status.armMode === 'night')
-    return { topCaption: t('Armed'), label: t('Night mode'), icon: '🌙', color: colors.accentInk, bg: colors.danger };
+    return { topCaption: t('Armed'), label: t('Night mode'), iconSource: NIGHT_ICON, color: colors.accentInk, bg: colors.danger };
   if (status.armMode === 'away')
-    return { topCaption: t('Armed'), label: t('Away mode'), icon: '🏠', color: colors.accentInk, bg: colors.danger };
-  if (status.isReady) return { label: t('Ready to arm'), icon: '🛡️', color: colors.accentInk, bg: colors.accent };
+    return { topCaption: t('Armed'), label: t('Away mode'), iconSource: AWAY_ICON, color: colors.accentInk, bg: colors.danger };
+  if (status.isReady)
+    return { label: t('Ready to arm'), iconSource: READY_ICON, color: colors.accentInk, bg: colors.accent };
   if (status.isNotReady) return { label: t('Not ready (zones open)'), icon: '⚠️', color: colors.ink, bg: colors.panel };
   if (status.isError) return { label: t('Command error'), icon: '❗', color: colors.accentInk, bg: colors.danger };
   return { label: t('No response'), icon: '❓', color: colors.ink, bg: colors.panel };
@@ -594,34 +636,34 @@ function ActionCard({
   );
 }
 
-// New APP Videos/'s "Exclusiones" badge is an icon-on-top-of-label mini card -- the same visual
-// language as the Pánico/Asalto Silencioso/Emergencia ActionCards below -- not the small dot+text
-// pill this used to be.
+// Memoria / Exclusiones / Fallas, matching the previous app's .fail-button: a fixed 77x50
+// near-white tile with that app's own icon above a 10px label, laid out as a centred row rather
+// than three cards stretched across the width. See INFO_BUTTON above.
 function InfoBadge({
-  icon,
+  iconSource,
   label,
-  tone,
   onPress,
 }: {
-  icon: string;
+  iconSource: number;
   label: string;
-  tone: 'neutral' | 'warning' | 'danger';
   onPress?: () => void;
 }) {
-  const { colors, typography, radius } = useTheme();
-  const bg = tone === 'danger' ? colors.dangerBg : tone === 'warning' ? colors.warningBg : colors.panel;
-  // Each glyph is tinted to its badge's own tone, so Memoria/Exclusiones/Fallas read as one set
-  // rather than three unrelated pictures. They used to be emoji, which every Android skin draws
-  // in its own style and palette -- that is what the client meant by "los iconos de fallas,
-  // exclusiones y memorias deben ser iguales".
-  const iconColor = tone === 'danger' ? colors.danger : tone === 'warning' ? colors.warning : colors.accent;
   const badge = (
-    <View style={[styles.badge, { backgroundColor: bg, borderColor: colors.line, borderRadius: radius.md }]}>
-      <Text style={[styles.badgeIcon, { color: iconColor }]}>{icon}</Text>
-      <Text style={[typography.body, { color: colors.ink, fontWeight: '700' }]}>{label}</Text>
+    <View style={styles.badge}>
+      <Image source={iconSource} style={styles.badgeIcon} resizeMode="contain" />
+      <Text style={styles.badgeLabel} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
-  return onPress ? <Pressable style={{ flex: 1 }} onPress={onPress}>{badge}</Pressable> : badge;
+  // hitSlop keeps the tap target comfortable even though the tile itself is deliberately small.
+  return onPress ? (
+    <Pressable onPress={onPress} hitSlop={8}>
+      {badge}
+    </Pressable>
+  ) : (
+    badge
+  );
 }
 
 function SmsHome({ navigation }: { navigation: HomeNavigation }) {
@@ -686,7 +728,7 @@ function SmsHome({ navigation }: { navigation: HomeNavigation }) {
         <ActionCard iconSource={DURESS_ICON} label={t('Duress')} onPress={() => send(SmsCommands.duress)} loading={sending} style={{ flex: 1 }} />
       </View>
       <ActionCard
-        icon="📢"
+        iconSource={EMERGENCY_ICON}
         label={t('Emergency')}
         onPress={() => send(SmsCommands.emergency)}
         loading={sending}
@@ -734,7 +776,7 @@ function TopBar({
         onPress={onSwitchPanel}
         style={[styles.panelPill, { backgroundColor: colors.panel, borderRadius: radius.pill }]}
       >
-        <Text style={{ fontSize: 15, marginRight: 8 }}>{'\u{1F516}'}</Text>
+        <Image source={PANEL_ICON} style={styles.panelPillIcon} resizeMode="contain" />
         <Text style={[typography.body, { color: colors.ink, fontWeight: '700' }]} numberOfLines={1}>
           {description}
         </Text>
@@ -807,24 +849,38 @@ const styles = StyleSheet.create({
     height: 56,
     marginBottom: 8,
   },
+  // The previous app centres this row (ion-justify-content-center) with the tiles at their own
+  // fixed width, rather than stretching them edge to edge.
   badgeRow: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'center',
+    gap: 12,
     marginBottom: 16,
   },
-  // Sized to match the previous app's Memoria/Exclusiones/Fallas buttons (client's "Pruebas
-  // 1-10-26" feedback) -- same footprint as the Pánico/Duress ActionCards below, not the smaller
-  // pill these used to be.
   badge: {
-    flex: 1,
+    width: INFO_BUTTON.width,
+    height: INFO_BUTTON.height,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: INFO_BUTTON.background,
     borderWidth: 1,
-    paddingVertical: 20,
+    borderColor: INFO_BUTTON.border,
+    borderRadius: INFO_BUTTON.radius,
+    // box-shadow: 0px 3px 4px rgba(0,0,0,0.3)
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   badgeIcon: {
-    fontSize: 28,
-    marginBottom: 6,
+    width: INFO_BUTTON.iconSize,
+    height: INFO_BUTTON.iconSize,
+  },
+  badgeLabel: {
+    color: INFO_BUTTON.labelColor,
+    fontSize: INFO_BUTTON.labelSize,
+    marginTop: 2,
   },
   armOptions: {
     borderWidth: 1,
@@ -846,6 +902,17 @@ const styles = StyleSheet.create({
   },
   // Client's "Pruebas 1-10-26" feedback: enlarge the Pánico/Asalto Silencioso icons to match the
   // previous app's reference size -- these read as small relative to the card at 40x40.
+  // The previous app draws this state icon at max-height 120px inside the status button.
+  statusIconImage: {
+    width: 110,
+    height: 110,
+    marginBottom: 6,
+  },
+  panelPillIcon: {
+    width: 18,
+    height: 18,
+    marginRight: 8,
+  },
   actionIconImage: {
     width: 72,
     height: 72,

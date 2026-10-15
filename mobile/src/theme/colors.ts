@@ -51,9 +51,16 @@ export interface Palette {
 }
 
 export const palette: Palette = {
-  gradientTop: '#123244',
-  gradientBottom: '#1b0f36',
-  bg: '#141c30',
+  // The previous app's own background, verbatim from its home.page.scss:
+  //   --ion-background-color: linear-gradient(180deg, #1d4c5f 0%, #1f063e 100%)
+  // The client asked for the main screen to match the app they use, colours included ("copiar
+  // tamanos de botones, colores, tipografia, iconos, distribucion", 14 Oct). These were close
+  // but not the same, which is visible side by side. The old app applied this gradient to every
+  // ion-content, so it is set app-wide here too rather than only on Home.
+  gradientTop: '#1d4c5f',
+  gradientBottom: '#1f063e',
+  // Flat midpoint of the two stops above, for surfaces that cannot render a gradient.
+  bg: '#1e294e',
   panel: '#ffffff',
   headerBg: '#1f5c6b',
   headerInk: '#ffffff',
