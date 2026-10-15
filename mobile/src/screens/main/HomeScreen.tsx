@@ -70,7 +70,10 @@ const PANEL_ICON = require('../../assets/images/icon-panel.png');
 const MAIN = {
   statusHeight: 150,          // .status-icon
   statusRadius: 10,
-  statusIconMaxHeight: 110,   // its img max-height is 120, minus room for the caption
+  // Its img is max-height 120, but that is a CSS max in a flex column that shrinks. A fixed
+  // height here does not shrink, and 120 + the 18pt caption + the 18pt label overflows the 150
+  // box, so this is the largest value that still fits the armed state without clipping.
+  statusIconMaxHeight: 110,
   statusGreen: '#69C1AB',     // .status-green  ($green)
   statusRed: '#F37575',       // .status-red    ($danger)
   statusGray: '#848484',      // .status-gray
@@ -85,6 +88,12 @@ const MAIN = {
   pillHeight: 50,             // .btn-selector
   pillRadius: 6,
   pillLabelSize: 16,
+  // .button-option: the three mode buttons that open from the status card
+  optionHeight: 140,
+  optionGap: 10,
+  optionIcon: 70,
+  // .flex-colum / .flex-row gap between the bottom buttons
+  bottomGap: 16,
   shadow: { shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 4, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
 };
 
@@ -96,7 +105,7 @@ const INFO_BUTTON = {
   radius: 4,
   labelColor: '#0D455C',
   labelSize: 10,
-  iconSize: 26,
+  iconSize: 30,
 };
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Home'>;
@@ -194,7 +203,7 @@ function IpHome({
   description: string;
   isOnline?: boolean;
 }) {
-  const { colors, typography, spacing, radius } = useTheme();
+  const { colors, typography, spacing } = useTheme();
   const { t } = useLocale();
   const { logout } = useAuth();
   const { reachabilityOf, reportReachability } = usePanels();
@@ -432,13 +441,13 @@ function IpHome({
       </View>
 
       {armExpanded && (
-        <View style={[styles.armOptions, { backgroundColor: colors.panel, borderColor: colors.line, borderRadius: radius.md }]}>
-          <Text style={[typography.label, { color: colors.inkDim, marginBottom: spacing.sm }]}>{t('Arm mode')}</Text>
-          <PrimaryButton title={t('Away')} onPress={() => handleArm('away')} loading={actionPending} />
-          <View style={{ height: spacing.sm }} />
-          <PrimaryButton title={t('Night')} onPress={() => handleArm('night')} loading={actionPending} />
-          <View style={{ height: spacing.sm }} />
-          <PrimaryButton title={t('Day')} onPress={() => handleArm('stay')} loading={actionPending} />
+        // The previous app opens three green mode buttons side by side under the status card
+        // (.button-option: 140 tall, ~30% wide, gap 10), each an icon over its own caption --
+        // not a white card with stacked text buttons the way this read before.
+        <View style={styles.armOptions}>
+          <ArmOption iconSource={AWAY_ICON} label={t('Arm away mode')} onPress={() => handleArm('away')} disabled={actionPending} />
+          <ArmOption iconSource={NIGHT_ICON} label={t('Arm night mode')} onPress={() => handleArm('night')} disabled={actionPending} />
+          <ArmOption iconSource={DAY_ICON} label={t('Arm day mode')} onPress={() => handleArm('stay')} disabled={actionPending} />
         </View>
       )}
 
@@ -458,7 +467,7 @@ function IpHome({
           onPress={() => confirmTrigger('panic', () => panic(deviceIdRef.current))}
           loading={triggerPending === 'panic'}
           disabled={triggerPending !== null || actionPending}
-          style={{ flex: 1, marginRight: spacing.sm }}
+          style={{ flex: 1, marginRight: MAIN.bottomGap }}
         />
         <ActionCard
           iconSource={DURESS_ICON}
@@ -476,7 +485,7 @@ function IpHome({
         loading={triggerPending === 'emergency'}
         disabled={triggerPending !== null || actionPending}
         tone="danger"
-        style={{ marginTop: spacing.sm }}
+        style={{ marginTop: MAIN.bottomGap }}
       />
     </ScrollView>
     </GradientBackground>
@@ -521,7 +530,7 @@ function StatusCard({
   onPress: () => void;
   disabled: boolean;
 }) {
-  const { colors, typography, spacing } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLocale();
   const [waveFrame, setWaveFrame] = useState(0);
   const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -567,9 +576,7 @@ function StatusCard({
         },
       ]}
     >
-      {topCaption && (
-        <Text style={[typography.readoutSm, { color, marginBottom: spacing.xs, opacity: 0.85 }]}>{topCaption}</Text>
-      )}
+      {topCaption && <Text style={[styles.statusText, { color }]}>{topCaption}</Text>}
       {status.bell ? (
         <Image source={SIREN_WAVE_FRAMES[waveFrame]} style={styles.sirenWaveIcon} resizeMode="contain" />
       ) : iconSource ? (
@@ -577,7 +584,7 @@ function StatusCard({
       ) : (
         <Text style={styles.statusIcon}>{icon}</Text>
       )}
-      <Text style={[typography.readout, { color, textAlign: 'center' }]}>{label}</Text>
+      <Text style={[styles.statusText, { color, textAlign: 'center' }]}>{label}</Text>
     </AnimatedPressable>
   );
 }
@@ -696,6 +703,29 @@ function InfoBadge({
   );
 }
 
+// One of the three mode buttons above: .button-option, a green tile with the mode's own icon
+// over a 12px caption.
+function ArmOption({
+  iconSource,
+  label,
+  onPress,
+  disabled,
+}: {
+  iconSource: number;
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable onPress={onPress} disabled={disabled} style={[styles.armOption, { opacity: disabled ? 0.6 : 1 }]}>
+      <Image source={iconSource} style={styles.armOptionIcon} resizeMode="contain" />
+      <Text style={styles.armOptionLabel} numberOfLines={2}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
 function SmsHome({ navigation }: { navigation: HomeNavigation }) {
   const { colors, typography, spacing } = useTheme();
   const { t } = useLocale();
@@ -754,7 +784,7 @@ function SmsHome({ navigation }: { navigation: HomeNavigation }) {
           buttons -- matched here; the arm/disarm/status actions above have no equivalent shown
           in the reference, so they keep the existing button list rather than guessing a layout. */}
       <View style={[styles.actionRow, { marginTop: spacing.md }]}>
-        <ActionCard iconSource={PANIC_ICON} label={t('Panic')} onPress={() => send(SmsCommands.panic)} loading={sending} style={{ flex: 1, marginRight: spacing.sm }} />
+        <ActionCard iconSource={PANIC_ICON} label={t('Panic')} onPress={() => send(SmsCommands.panic)} loading={sending} style={{ flex: 1, marginRight: MAIN.bottomGap }} />
         <ActionCard iconSource={DURESS_ICON} label={t('Duress')} onPress={() => send(SmsCommands.duress)} loading={sending} style={{ flex: 1 }} />
       </View>
       <ActionCard
@@ -763,7 +793,7 @@ function SmsHome({ navigation }: { navigation: HomeNavigation }) {
         onPress={() => send(SmsCommands.emergency)}
         loading={sending}
         tone="danger"
-        style={{ marginTop: spacing.sm }}
+        style={{ marginTop: MAIN.bottomGap }}
       />
     </ScrollView>
     </GradientBackground>
@@ -927,9 +957,34 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   armOptions: {
-    borderWidth: 1,
-    padding: 16,
+    flexDirection: 'row',
+    gap: MAIN.optionGap,
     marginBottom: 16,
+  },
+  armOption: {
+    flex: 1,
+    height: MAIN.optionHeight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    backgroundColor: MAIN.statusGreen,
+    borderRadius: MAIN.actionRadius,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  armOptionIcon: {
+    width: MAIN.optionIcon,
+    height: MAIN.optionIcon,
+    marginBottom: 8,
+  },
+  armOptionLabel: {
+    color: '#ffffff',
+    fontSize: MAIN.labelSize,
+    lineHeight: 18,
+    textAlign: 'center',
   },
   actionRow: {
     flexDirection: 'row',
@@ -947,6 +1002,13 @@ const styles = StyleSheet.create({
   // Client's "Pruebas 1-10-26" feedback: enlarge the Pánico/Asalto Silencioso icons to match the
   // previous app's reference size -- these read as small relative to the card at 40x40.
   // The previous app draws this state icon at max-height 120px inside the status button.
+  // .column ion-text: 12px, weight 400, line-height 18. The status card used to set this in
+  // 20px/800, which is the single biggest visual difference from the previous app's card.
+  statusText: {
+    fontSize: MAIN.labelSize,
+    fontWeight: '400',
+    lineHeight: 18,
+  },
   statusIconImage: {
     width: MAIN.statusIconMaxHeight,
     height: MAIN.statusIconMaxHeight,
