@@ -266,6 +266,15 @@ namespace TausendBackend.Api.Migrations
                             UpdatedDateTime = @CurrentDateTime,
                             PublicKey = @PublicKey
                         WHERE DeviceId = @Result
+
+                        -- Reviving the row re-enables every AccountDevicePins row still attached
+                        -- to it, so an account that held a code on this panel before it was
+                        -- retired would silently see it again and be able to command it. Live
+                        -- data (15 Oct) has one identifier with five disabled Devices rows
+                        -- carrying seven link rows across four accounts. DeleteDevice clears
+                        -- every link and BlockDevice moves them to quarantine, so once no
+                        -- enabled row exists no legitimate link does either; these are residue.
+                        DELETE FROM AccountDevicePins WHERE DeviceId = @Result
                     END
                 END
                 ELSE BEGIN

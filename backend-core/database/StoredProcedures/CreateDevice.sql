@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[CreateDevice]
+﻿CREATE PROCEDURE [dbo].[CreateDevice]
 	@AccessToken UniqueIdentifier,
 	@Description NVARCHAR(255),
 	@Identifier NVARCHAR(255),
@@ -68,6 +68,19 @@ AS BEGIN
 				UpdatedDateTime = @CurrentDateTime,
 				PublicKey = @PublicKey
 			WHERE DeviceId = @Result
+
+			-- Reviving the row brings it back to Enabled = 1, which also brings back every
+			-- AccountDevicePins row still attached to it: GetAccount lists an account's panels
+			-- through those rows joined to enabled Devices, so any account that held a code on
+			-- this panel before it was retired would silently see it again, and be able to
+			-- command it. Found in live data (15 Oct): one identifier with five disabled Devices
+			-- rows carrying seven link rows across four accounts.
+			--
+			-- Those rows are residue. DeleteDevice clears every link for the device and
+			-- BlockDevice reassigns them to the quarantine account, so by the time no enabled row
+			-- exists, no legitimate link does either. Clearing them keeps a relink granting
+			-- access to exactly one account: the one doing it.
+			DELETE FROM AccountDevicePins WHERE DeviceId = @Result
 		END
 	END
 	ELSE BEGIN
