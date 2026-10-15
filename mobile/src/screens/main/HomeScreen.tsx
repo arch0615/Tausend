@@ -60,6 +60,11 @@ const AWAY_ICON = require('../../assets/images/icon-mode-away.png');
 const DAY_ICON = require('../../assets/images/icon-mode-day.png');
 const NIGHT_ICON = require('../../assets/images/icon-mode-night.png');
 const PANEL_ICON = require('../../assets/images/icon-panel.png');
+// The previous app has no card for "no response" or "command error" -- it keeps spinning -- and
+// it draws any disarmed state with lock_open. So rather than leave these three on emoji, which
+// is what the client objected to, not-ready reuses that same shield and the two unreadable
+// states use its own "consultar estado" magnifier.
+const STATE_UNKNOWN_ICON = require('../../assets/images/icon-state-unknown.png');
 
 // home.page.scss's .fail-button and its ion-label, verbatim: the size the client asked for in
 // both rounds ("deben ser como los de la APP en uso (la anterior)").
@@ -598,7 +603,7 @@ function describeStatus(
   colors: ReturnType<typeof useTheme>['colors'],
   t: ReturnType<typeof useLocale>['t'],
 ) {
-  if (status.bell) return { label: t('Siren active'), icon: '🚨', color: colors.accentInk, bg: MAIN.statusRed };
+  if (status.bell) return { label: t('Siren active'), color: colors.accentInk, bg: MAIN.statusRed };
   if (status.armMode === 'stay')
     return { topCaption: t('Armed'), label: t('Day mode'), iconSource: DAY_ICON, color: colors.accentInk, bg: MAIN.statusRed };
   if (status.armMode === 'night')
@@ -607,9 +612,11 @@ function describeStatus(
     return { topCaption: t('Armed'), label: t('Away mode'), iconSource: AWAY_ICON, color: colors.accentInk, bg: MAIN.statusRed };
   if (status.isReady)
     return { label: t('Ready to arm'), iconSource: READY_ICON, color: colors.accentInk, bg: MAIN.statusGreen };
-  if (status.isNotReady) return { label: t('Not ready (zones open)'), icon: '⚠️', color: colors.ink, bg: colors.panel };
-  if (status.isError) return { label: t('Command error'), icon: '❗', color: colors.accentInk, bg: MAIN.statusRed };
-  return { label: t('No response'), icon: '❓', color: colors.accentInk, bg: MAIN.statusGray };
+  if (status.isNotReady)
+    return { label: t('Not ready (zones open)'), iconSource: READY_ICON, color: colors.accentInk, bg: MAIN.statusGray };
+  if (status.isError)
+    return { label: t('Command error'), iconSource: STATE_UNKNOWN_ICON, color: colors.accentInk, bg: MAIN.statusRed };
+  return { label: t('No response'), iconSource: STATE_UNKNOWN_ICON, color: colors.accentInk, bg: MAIN.statusGray };
 }
 
 // Two side by side (Pánico/Asalto Silencioso) or one full width (Emergencia) -- matches New APP
