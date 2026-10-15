@@ -63,6 +63,31 @@ const PANEL_ICON = require('../../assets/images/icon-panel.png');
 
 // home.page.scss's .fail-button and its ion-label, verbatim: the size the client asked for in
 // both rounds ("deben ser como los de la APP en uso (la anterior)").
+// The rest of home.page.scss's main-screen rules, same source as INFO_BUTTON below. Kept local
+// to this screen rather than pushed into the theme: accent and danger style every other screen's
+// buttons and links, so changing those tokens would restyle the whole app, and the client asked
+// for the main screen.
+const MAIN = {
+  statusHeight: 150,          // .status-icon
+  statusRadius: 10,
+  statusIconMaxHeight: 110,   // its img max-height is 120, minus room for the caption
+  statusGreen: '#69C1AB',     // .status-green  ($green)
+  statusRed: '#F37575',       // .status-red    ($danger)
+  statusGray: '#848484',      // .status-gray
+  actionHeight: 91,           // .btn-bottom
+  actionRadius: 4,
+  actionBg: '#fafafa',
+  actionIcon: 60,             // .icons-bottom
+  emergencyHeight: 110,       // .btn-emergency
+  emergencyIcon: 80,
+  labelColor: '#0D455C',      // $primary
+  labelSize: 12,              // .column ion-text
+  pillHeight: 50,             // .btn-selector
+  pillRadius: 6,
+  pillLabelSize: 16,
+  shadow: { shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 4, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+};
+
 const INFO_BUTTON = {
   width: 77,
   height: 50,
@@ -496,7 +521,7 @@ function StatusCard({
   onPress: () => void;
   disabled: boolean;
 }) {
-  const { colors, typography, spacing, radius } = useTheme();
+  const { colors, typography, spacing } = useTheme();
   const { t } = useLocale();
   const [waveFrame, setWaveFrame] = useState(0);
   const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -534,10 +559,11 @@ function StatusCard({
       style={[
         styles.statusCard,
         {
+          // .status-icon: 150 tall, radius 10, its own drop shadow.
+          height: MAIN.statusHeight,
           backgroundColor: status.bell ? pulseBg : bg,
-          borderRadius: radius.lg,
+          borderRadius: MAIN.statusRadius,
           opacity: disabled ? 0.6 : 1,
-          shadowColor: color,
         },
       ]}
     >
@@ -565,18 +591,18 @@ function describeStatus(
   colors: ReturnType<typeof useTheme>['colors'],
   t: ReturnType<typeof useLocale>['t'],
 ) {
-  if (status.bell) return { label: t('Siren active'), icon: '🚨', color: colors.accentInk, bg: colors.danger };
+  if (status.bell) return { label: t('Siren active'), icon: '🚨', color: colors.accentInk, bg: MAIN.statusRed };
   if (status.armMode === 'stay')
-    return { topCaption: t('Armed'), label: t('Day mode'), iconSource: DAY_ICON, color: colors.accentInk, bg: colors.danger };
+    return { topCaption: t('Armed'), label: t('Day mode'), iconSource: DAY_ICON, color: colors.accentInk, bg: MAIN.statusRed };
   if (status.armMode === 'night')
-    return { topCaption: t('Armed'), label: t('Night mode'), iconSource: NIGHT_ICON, color: colors.accentInk, bg: colors.danger };
+    return { topCaption: t('Armed'), label: t('Night mode'), iconSource: NIGHT_ICON, color: colors.accentInk, bg: MAIN.statusRed };
   if (status.armMode === 'away')
-    return { topCaption: t('Armed'), label: t('Away mode'), iconSource: AWAY_ICON, color: colors.accentInk, bg: colors.danger };
+    return { topCaption: t('Armed'), label: t('Away mode'), iconSource: AWAY_ICON, color: colors.accentInk, bg: MAIN.statusRed };
   if (status.isReady)
-    return { label: t('Ready to arm'), iconSource: READY_ICON, color: colors.accentInk, bg: colors.accent };
+    return { label: t('Ready to arm'), iconSource: READY_ICON, color: colors.accentInk, bg: MAIN.statusGreen };
   if (status.isNotReady) return { label: t('Not ready (zones open)'), icon: '⚠️', color: colors.ink, bg: colors.panel };
-  if (status.isError) return { label: t('Command error'), icon: '❗', color: colors.accentInk, bg: colors.danger };
-  return { label: t('No response'), icon: '❓', color: colors.ink, bg: colors.panel };
+  if (status.isError) return { label: t('Command error'), icon: '❗', color: colors.accentInk, bg: MAIN.statusRed };
+  return { label: t('No response'), icon: '❓', color: colors.accentInk, bg: MAIN.statusGray };
 }
 
 // Two side by side (Pánico/Asalto Silencioso) or one full width (Emergencia) -- matches New APP
@@ -601,7 +627,7 @@ function ActionCard({
   tone?: 'default' | 'danger';
   style?: object;
 }) {
-  const { colors, typography, radius } = useTheme();
+  const { colors } = useTheme();
   const isDanger = tone === 'danger';
   return (
     <Pressable
@@ -610,9 +636,11 @@ function ActionCard({
       style={[
         styles.actionCard,
         {
-          backgroundColor: isDanger ? colors.danger : colors.panel,
-          borderColor: isDanger ? colors.danger : colors.line,
-          borderRadius: radius.md,
+          // .btn-bottom is 91 tall on #fafafa; .btn-emergency is 110 on $danger, both radius 4
+          // with no border, only the shadow.
+          height: isDanger ? MAIN.emergencyHeight : MAIN.actionHeight,
+          backgroundColor: isDanger ? MAIN.statusRed : MAIN.actionBg,
+          borderRadius: MAIN.actionRadius,
           opacity: disabled && !loading ? 0.6 : 1,
         },
         style,
@@ -623,13 +651,15 @@ function ActionCard({
       ) : (
         <>
           {iconSource ? (
-            <Image source={iconSource} style={styles.actionIconImage} resizeMode="contain" />
+            <Image
+              source={iconSource}
+              style={{ width: isDanger ? MAIN.emergencyIcon : MAIN.actionIcon, height: isDanger ? MAIN.emergencyIcon : MAIN.actionIcon }}
+              resizeMode="contain"
+            />
           ) : (
             <Text style={styles.actionIcon}>{icon}</Text>
           )}
-          <Text style={[typography.body, { color: isDanger ? colors.accentInk : colors.ink, fontWeight: '700' }]}>
-            {label}
-          </Text>
+          <Text style={{ color: isDanger ? '#ffffff' : MAIN.labelColor, fontSize: MAIN.labelSize }}>{label}</Text>
         </>
       )}
     </Pressable>
@@ -759,7 +789,7 @@ function TopBar({
   onRefresh?: () => void;
   refreshing?: boolean;
 }) {
-  const { colors, typography, spacing, radius } = useTheme();
+  const { colors, spacing } = useTheme();
   return (
     <View style={[styles.topBar, { marginBottom: spacing.lg }]}>
       <MenuButton onPress={onMenu} />
@@ -767,17 +797,19 @@ function TopBar({
         <Pressable
           onPress={onRefresh}
           disabled={refreshing}
-          style={[styles.refreshCircle, { backgroundColor: colors.panel, opacity: refreshing ? 0.5 : 1 }]}
+          hitSlop={10}
+          style={[styles.refreshCircle, { backgroundColor: '#ffffff', opacity: refreshing ? 0.5 : 1 }]}
         >
           <Text style={{ fontSize: 16, color: colors.accent }}>{'⟳'}</Text>
         </Pressable>
       )}
       <Pressable
         onPress={onSwitchPanel}
-        style={[styles.panelPill, { backgroundColor: colors.panel, borderRadius: radius.pill }]}
+        style={[styles.panelPill, { backgroundColor: '#ffffff', borderRadius: MAIN.pillRadius, borderWidth: 1, borderColor: INFO_BUTTON.border }]}
       >
         <Image source={PANEL_ICON} style={styles.panelPillIcon} resizeMode="contain" />
-        <Text style={[typography.body, { color: colors.ink, fontWeight: '700' }]} numberOfLines={1}>
+        {/* .btn-selector p: 16px, $primary, weight 400 */}
+        <Text style={{ color: MAIN.labelColor, fontSize: MAIN.pillLabelSize }} numberOfLines={1}>
           {description}
         </Text>
       </Pressable>
@@ -811,32 +843,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  // .btn-refresh: 30x30 circle, white with a 1px #f2f3f3 edge and a soft drop shadow.
   refreshCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#f2f3f3',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
+  // .btn-selector: 50 tall, radius 6, 10px/16px padding, its own shadow.
   panelPill: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    height: MAIN.pillHeight,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     marginLeft: 12,
+    ...MAIN.shadow,
   },
   statusCard: {
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 32,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 3,
+    // .status-icon's own shadow: 0px 4px 4px rgba(0,0,0,0.25)
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
   },
   statusIcon: {
     fontSize: 48,
@@ -891,10 +935,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   actionCard: {
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
+    padding: 10,
+    ...MAIN.shadow,
   },
   actionIcon: {
     fontSize: 28,
@@ -904,14 +948,14 @@ const styles = StyleSheet.create({
   // previous app's reference size -- these read as small relative to the card at 40x40.
   // The previous app draws this state icon at max-height 120px inside the status button.
   statusIconImage: {
-    width: 110,
-    height: 110,
-    marginBottom: 6,
+    width: MAIN.statusIconMaxHeight,
+    height: MAIN.statusIconMaxHeight,
+    marginBottom: 4,
   },
   panelPillIcon: {
-    width: 18,
-    height: 18,
-    marginRight: 8,
+    width: 22,
+    height: 22,
+    marginRight: 10,
   },
   actionIconImage: {
     width: 72,
