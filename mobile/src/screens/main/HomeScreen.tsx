@@ -991,7 +991,9 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: MAIN.labelSize,
     lineHeight: 18,
+    height: 36,
     textAlign: 'center',
+    textAlignVertical: 'center',
   },
   actionRow: {
     flexDirection: 'row',
