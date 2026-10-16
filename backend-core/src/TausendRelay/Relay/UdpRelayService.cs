@@ -340,6 +340,17 @@ namespace TausendRelay.Relay
             SendMessage(cmd, remote);
 
             var backendDeviceId = _deviceCache.TryClaimBackendSync(device.Id, MinBackendSyncInterval);
+            if (backendDeviceId < 0)
+            {
+                // Cached as "not in the database" from an earlier registration. It may have been
+                // linked since, so look it up again rather than staying offline forever.
+                var resolved = await _backendClient.GetDeviceAsync(identifier);
+                if (resolved is not null && resolved.DeviceId > 0)
+                {
+                    _deviceCache.SetBackendDeviceId(device.Id, resolved.DeviceId);
+                    backendDeviceId = resolved.DeviceId;
+                }
+            }
             if (backendDeviceId > 0)
                 await _backendClient.UpdateDeviceLastConnectionAsync(backendDeviceId);
         }

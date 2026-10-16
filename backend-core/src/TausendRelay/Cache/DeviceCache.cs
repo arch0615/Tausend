@@ -87,13 +87,37 @@ namespace TausendRelay.Cache
             lock (_lock)
             {
                 var device = _devices.Find(d => d.Id == id);
-                if (device is null || device.DeviceId <= 0)
+                if (device is null)
                     return 0;
                 var now = DateTime.UtcNow;
                 if (device.LastBackendSyncUtc is not null && now - device.LastBackendSyncUtc < minInterval)
                     return 0;
                 device.LastBackendSyncUtc = now;
-                return device.DeviceId;
+                if (device.DeviceId > 0)
+                    return device.DeviceId;
+                // DeviceId 0 means the lookup in AddCentralDeviceAsync found nothing, which is
+                // what happens when a panel registers before it has an enabled row: powered on
+                // but not yet linked to anyone. It stayed 0 for the life of the process, so once
+                // somebody did link it the relay never wrote LastConnection again and the panel
+                // list showed "Sin conexion" indefinitely even though commands worked (client,
+                // 16 Oct). -1 asks the caller to resolve it by identifier once more. The slot is
+                // stamped above either way, so a panel that is genuinely unlinked costs one
+                // lookup per interval rather than one per heartbeat.
+                return -1;
+            }
+        }
+
+        /// <summary>Stores the backend DeviceId a late lookup resolved, so the next heartbeat can
+        /// sync normally. Also stamps the sync slot, since the caller is about to use it.</summary>
+        public void SetBackendDeviceId(int id, long deviceId)
+        {
+            lock (_lock)
+            {
+                var device = _devices.Find(d => d.Id == id);
+                if (device is null || deviceId <= 0)
+                    return;
+                device.DeviceId = deviceId;
+                device.LastBackendSyncUtc = DateTime.UtcNow;
             }
         }
 
