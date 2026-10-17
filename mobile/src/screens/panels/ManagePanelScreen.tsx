@@ -37,7 +37,12 @@ export function ManagePanelScreen({ route, navigation }: Props) {
   const smsDevice = panel?.kind === 'sms' ? session?.account.SmsDevices.find((d) => d.DeviceId === panel.deviceId) : undefined;
 
   const savedDescription = panel?.description ?? '';
-  const savedIdentifier = panel?.identifier ?? '';
+  // For an IP panel this second field is the panel's identifier. For an SMS panel the client
+  // asked it to read "Numero de telefono", and the identifier there is the panel model (cr832
+  // and the like, set by SmsPairingScreen), not a phone number -- so the field shows the real
+  // PhoneNumber instead and the model is passed through untouched on save.
+  const isSms = panel?.kind === 'sms';
+  const savedIdentifier = (isSms ? smsDevice?.PhoneNumber : panel?.identifier) ?? '';
   const savedPin = ipDevice?.Pin ?? smsDevice?.DevicePin ?? '';
 
   const [description, setDescription] = useState(savedDescription);
@@ -70,10 +75,10 @@ export function ManagePanelScreen({ route, navigation }: Props) {
           : await updateDeviceSms(
               panel.deviceId,
               description.trim(),
-              identifier.trim(),
+              smsDevice?.Identifier ?? '',
               pin.trim(),
               smsDevice?.SimPin ?? '',
-              smsDevice?.PhoneNumber ?? '',
+              identifier.trim(),
               smsDevice?.DeviceType ?? '',
             );
       if (res.State === ResponseState.UNAUTHORIZED) {
@@ -186,8 +191,20 @@ export function ManagePanelScreen({ route, navigation }: Props) {
 
       <Card style={styles.card}>
         <FormField label={t('Description')} value={description} onChangeText={setDescription} />
-        <FormField label={t('Identifier')} value={identifier} onChangeText={setIdentifier} autoCapitalize="none" autoCorrect={false} />
-        <FormField label={t('User code')} value={pin} onChangeText={setPin} keyboardType="number-pad" />
+        <FormField
+          label={isSms ? t('Phone number') : t('Identifier')}
+          value={identifier}
+          onChangeText={setIdentifier}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType={isSms ? 'phone-pad' : 'default'}
+        />
+        <FormField
+          label={isSms ? t('SMS PIN') : t('User code')}
+          value={pin}
+          onChangeText={setPin}
+          keyboardType="number-pad"
+        />
       </Card>
 
       <View style={{ marginTop: spacing.lg }}>
