@@ -140,20 +140,28 @@ export function ManagePanelScreen({ route, navigation }: Props) {
     }
   }
 
+  // 'Block' keeps its dialog copy unchanged -- the client's mockup (20 Oct) for this one is an
+  // actual screenshot of the dialog below with only the title and button relabelled, title case
+  // and all, so the underlying action is still exactly what it says: the panel stays enabled,
+  // every account's code is parked rather than erased, and relinking with that same code works.
+  // Only the button and title read "Desvincular para todos" now.
+  //
+  // 'Reset' is not a rename. The mockup's second dialog is a plain hand-made box with its own
+  // short text, "Esto elimina la central de todas las cuentas.", and the client's written spec
+  // for it calls for the panel's identifier to be deleted from the server -- see
+  // handleBlockOrReset below for what that means server-side.
   function confirmBlockOrReset(action: 'Block' | 'Reset') {
     if (!panel) return;
-    const title = action === 'Block' ? t('Lock this panel?') : t('Reset this panel?');
+    const title = action === 'Block' ? t('Unlink for everyone?') : t('Delete for everyone?');
     const message =
       action === 'Block'
         ? t(
             'This immediately revokes app control of the panel and signs out everyone who has it linked, including you. To restore access, link it again with the same identifier and user code.',
           )
-        : t(
-            "This wipes the panel from your account entirely and signs out everyone who has it linked, including you. You'll need to pair it again from scratch.",
-          );
+        : t('This removes the panel from every account.');
     Alert.alert(title, message, [
       { text: t('Cancel'), style: 'cancel' },
-      { text: action === 'Block' ? t('Lock') : t('Reset'), style: 'destructive', onPress: () => handleBlockOrReset(action) },
+      { text: action === 'Block' ? t('Unlink') : t('Delete'), style: 'destructive', onPress: () => handleBlockOrReset(action) },
     ]);
   }
 
@@ -226,9 +234,9 @@ export function ManagePanelScreen({ route, navigation }: Props) {
           <Text style={[typography.bodyDim, { color: colors.onDarkDim, marginBottom: spacing.md }]}>
             {t('These affect everyone who has this panel linked, not just you.')}
           </Text>
-          <PrimaryButton title={t('Lock this panel')} onPress={() => confirmBlockOrReset('Block')} loading={working} />
+          <PrimaryButton title={t('Unlink for everyone')} onPress={() => confirmBlockOrReset('Block')} loading={working} />
           <View style={{ height: spacing.sm }} />
-          <PrimaryButton title={t('Reset this panel')} onPress={() => confirmBlockOrReset('Reset')} loading={working} />
+          <PrimaryButton title={t('Delete for everyone')} onPress={() => confirmBlockOrReset('Reset')} loading={working} />
         </>
       )}
     </ScrollView>
