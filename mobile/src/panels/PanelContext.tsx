@@ -91,13 +91,19 @@ export function PanelProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Keeps the selection valid as the panel list changes (a fresh login, a panel getting
-  // unlinked, or the very first panel being paired) -- falls back to the first available panel,
-  // or clears out if there are none.
+  // unlinked, or the very first panel being paired).
+  //
+  // It only auto-picks when there is exactly one panel to pick. With several, falling back to
+  // panels[0] dropped the user straight into whichever panel happened to be first and the device
+  // selector was never shown, so there was no point at which they could see the others or their
+  // connection state: "si hay mas de una central registrada, la app deberia abrir la pantalla
+  // Selector de equipo" (client, 16 Oct). Leaving the selection null makes Home show the selector
+  // instead.
   useEffect(() => {
     if (!hydrated) return;
     const stillExists = selection && panels.some((p) => p.kind === selection.kind && p.deviceId === selection.deviceId);
     if (stillExists) return;
-    const next = panels[0] ? { kind: panels[0].kind, deviceId: panels[0].deviceId } : null;
+    const next = panels.length === 1 ? { kind: panels[0].kind, deviceId: panels[0].deviceId } : null;
     setSelection(next);
     if (next) {
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import { GradientBackground } from '../../components/GradientBackground';
 import { Card } from '../../components/Card';
@@ -14,9 +13,18 @@ import type { MainStackParamList } from '../../navigation/types';
 // centers it above a white card, overlapping the card's top edge, rather than a plain page title.
 const EAGLE_LOGO = require('../../assets/images/eagle-logo.png');
 
-type Props = NativeStackScreenProps<MainStackParamList, 'PanelSelector'>;
 
-export function PanelSelectorScreen({ navigation }: Props) {
+// HomeScreen renders this inline when an account has several panels and none is chosen yet, so
+// the navigation prop is typed by the three destinations actually used rather than by this
+// screen's own route -- Home's navigator prop is bound to "Home" and would not otherwise fit.
+interface SelectorNavigation {
+  navigate: {
+    (screen: 'Home' | 'SelectPairingType'): void;
+    (screen: 'ManagePanel', params: MainStackParamList['ManagePanel']): void;
+  };
+}
+
+export function PanelSelectorScreen({ navigation }: { navigation: SelectorNavigation }) {
   const { colors, typography, spacing, radius } = useTheme();
   const { t } = useLocale();
   const { panels, selected, selectPanel, reachabilityOf } = usePanels();

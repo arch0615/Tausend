@@ -38,6 +38,9 @@ export function CreateDeviceScreen({ navigation }: Props) {
   const { colors, typography, spacing } = useTheme();
   const { t } = useLocale();
   const { session, refreshSession, logout } = useAuth();
+  // The retry limit is counted per account as well as per panel, so one installer using up their
+  // attempts does not lock the panel for the next person signing in on the same handset.
+  const retryAccount = session?.account.Email ?? '';
   const [description, setDescription] = useState('');
   const [identifier, setIdentifier] = useState('');
   const [pin, setPin] = useState('');
@@ -56,16 +59,16 @@ export function CreateDeviceScreen({ navigation }: Props) {
           setLockedOut(false);
           return;
         }
-        const count = await getPinRetryCount(identifier);
+        const count = await getPinRetryCount(retryAccount, identifier);
         setLockedOut(count >= MAX_PIN_RETRIES);
-        const remaining = await pinRetryCooldownRemaining(identifier);
+        const remaining = await pinRetryCooldownRemaining(retryAccount, identifier);
         setCooldownMins(Math.max(1, Math.ceil(remaining / 60000)));
       } catch {
         // Fail open -- if the local retry count can't be read, don't falsely lock the user out.
         setLockedOut(false);
       }
     })();
-  }, [identifier]);
+  }, [identifier, retryAccount]);
 
   function handleSubmit() {
     if (!description.trim()) {
@@ -101,7 +104,7 @@ export function CreateDeviceScreen({ navigation }: Props) {
       // always rendered blank.
       const res = await createDevice(description.trim(), identifier.trim(), pin, session?.account.Email);
       if (res.Code === 0 && res.State === ResponseState.OK) {
-        await resetPinRetryCount(identifier);
+        await resetPinRetryCount(retryAccount, identifier);
         // So the new panel shows up immediately in the selector/Home instead of waiting for
         // the next full app launch (session.account.Devices is otherwise only refreshed then).
         await refreshSession();
@@ -115,7 +118,7 @@ export function CreateDeviceScreen({ navigation }: Props) {
         return;
       }
       if (res.Code === 400 && WRONG_PIN_MESSAGES.includes(res.Message)) {
-        const count = await incrementPinRetryCount(identifier);
+        const count = await incrementPinRetryCount(retryAccount, identifier);
         const left = Math.max(0, MAX_PIN_RETRIES - count);
         if (count >= MAX_PIN_RETRIES) {
           setLockedOut(true);

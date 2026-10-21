@@ -30,6 +30,7 @@ import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { Snackbar } from '../../components/Snackbar';
 import { MainMenu, MenuButton } from '../../components/MainMenu';
 import { shareEmergencyLocation } from '../../panels/emergencyLocation';
+import { PanelSelectorScreen } from '../panels/PanelSelectorScreen';
 import type { MainStackParamList } from '../../navigation/types';
 
 // Client-supplied 3D icons ("Pruebas 22-9-26" feedback round) to replace the plain OS emoji
@@ -127,10 +128,6 @@ function delay(ms: number): Promise<void> {
 
 type HomeNavigation = Props['navigation'];
 
-// Same asset as the login screen's wordmark (see LoginScreen.tsx) -- New APP Videos/'s equivalent
-// "no panel yet" screen (Vincular Equipo) also centers the eagle above the message, on a white
-// card floating on the gradient, not text placed directly on the gradient itself.
-const EAGLE_LOGO = require('../../assets/images/eagle-logo.png');
 
 export function HomeScreen({ navigation }: Props) {
   const { colors, typography, spacing } = useTheme();
@@ -169,20 +166,11 @@ export function HomeScreen({ navigation }: Props) {
         </GradientBackground>
       );
     }
-    return (
-      <GradientBackground style={styles.centered}>
-        <Card style={styles.emptyCard}>
-          <Image source={EAGLE_LOGO} style={styles.emptyLogo} resizeMode="contain" />
-          <Text style={[typography.title, { color: colors.ink, marginBottom: spacing.xs, textAlign: 'center' }]}>
-            {t('Home')}
-          </Text>
-          <Text style={[typography.bodyDim, { color: colors.inkDim, marginBottom: spacing.xl, textAlign: 'center' }]}>
-            {t('Select a panel to get started.')}
-          </Text>
-          <PrimaryButton title={t('Switch panel')} onPress={() => navigation.navigate('PanelSelector')} />
-        </Card>
-      </GradientBackground>
-    );
+    // More than one panel and none chosen yet: show the selector itself rather than a card whose
+    // only purpose was a button that opens it. The client asked for the selector to be where you
+    // land after signing in, so that the panels and their connection state are visible before
+    // picking one.
+    return <PanelSelectorScreen navigation={navigation} />;
   }
 
   return selected.kind === 'sms' ? (

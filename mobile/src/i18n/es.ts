@@ -323,6 +323,8 @@ export const es: Record<string, string> = {
   'Change the SMS PIN on "{name}" by text message.': 'Cambia la Clave SMS de "{name}" por mensaje de texto.',
   'Select an SMS panel to change its PIN.': 'Selecciona una central SMS para cambiar su Clave SMS.',
   'SMS PIN': 'Clave SMS',
+  // Manage-panel label for an SMS central, per the client on 17 Oct.
+  'Phone number': 'Número de teléfono',
   'Repeat SMS PIN': 'Repetir Clave SMS',
   'Enter a valid SMS PIN.': 'Ingresa una Clave SMS válida.',
   'Enter a valid confirmation PIN.': 'Ingresa un PIN de confirmación válido.',
