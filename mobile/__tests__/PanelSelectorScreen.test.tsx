@@ -143,7 +143,7 @@ describe('Selector de equipo, live status', () => {
     // PROBE_RETRY_DELAY_MS wait in between -- long enough to outlast a couple of microtask ticks,
     // so this has to actually wait out that retry rather than just flushing the promise queue.
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      await new Promise<void>((resolve) => setTimeout(resolve, 600));
     });
 
     const dots = tree.root.findAllByType(StatusDot);
@@ -158,6 +158,46 @@ describe('Selector de equipo, live status', () => {
     };
     expect(colourByLabel('Alpha Panel')).toBe(palette.okInk);
     expect(colourByLabel('Zebra Panel')).toBe(palette.danger);
+  });
+
+  it('keeps polling while the screen just sits open, not only on the first check', async () => {
+    // Client, 22 Oct follow-up: "if a control panel disconnects, the status indicator does not
+    // change ... should be refreshed every time this screen is opened or checked" -- this screen
+    // is rendered inline by HomeScreen rather than being its own navigator route, so a real
+    // useFocusEffect only fires once per actual navigation transition into Home, typically just at
+    // login. Nothing here unmounts, re-renders via navigation, or calls render() again -- only the
+    // interval ticks -- so a passing assertion can only mean the repeating poll did the work.
+    jest.useFakeTimers();
+    try {
+      mockGetGeneralStatus.mockResolvedValue({ State: 0, Text: 'READY' });
+      const tree = render();
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(0);
+      });
+
+      const dotForZebra = () => {
+        const textNode = tree.root.findAllByType(Text).find((n) => n.props.children === 'Zebra Panel')!;
+        let row = textNode;
+        while (!row.findAllByType(StatusDot).length) row = row.parent!;
+        return row.findAllByType(StatusDot)[0].props.color;
+      };
+      expect(dotForZebra()).toBe(palette.okInk);
+
+      mockGetGeneralStatus.mockImplementation((deviceId: number) =>
+        deviceId === 1 ? Promise.resolve({ State: 3, Text: null }) : Promise.resolve({ State: 0, Text: 'READY' }),
+      );
+      // +300ms past the interval's own period: the tick's own probe still has to burn through
+      // PROBE_RETRY_DELAY_MS before it gives up and calls reportReachability(false), so advancing
+      // to exactly POLL_INTERVAL_MS stops short of that and would leave the dot looking unchanged
+      // for the wrong reason (test not waiting long enough, not the screen not polling).
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(30300);
+      });
+
+      expect(dotForZebra()).toBe(palette.danger);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('no longer shows the Online/Offline text the dot replaced', async () => {

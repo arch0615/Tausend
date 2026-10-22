@@ -21,6 +21,15 @@ import type { MainStackParamList } from '../../navigation/types';
 const PROBE_ATTEMPTS = 2;
 const PROBE_RETRY_DELAY_MS = 250;
 
+// Same cadence as HomeScreen's own POLL_INTERVAL_MS. This screen is not its own navigator route --
+// HomeScreen renders it inline whenever no panel is selected -- so useFocusEffect below only fires
+// once per actual navigation transition into Home, typically just at login. Client, 22 Oct (follow
+// up): "if a control panel disconnects, the status indicator does not change ... should be
+// refreshed every time this screen is opened or checked" -- a panel that drops while the user is
+// simply sitting on this screen, with no further navigation to re-trigger focus, needs this same
+// repeating poll IpHome already uses, not just the one-shot check on first focus.
+const POLL_INTERVAL_MS = 30000;
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -54,27 +63,35 @@ export function PanelSelectorScreen({ navigation }: { navigation: SelectorNaviga
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      for (const panel of panels) {
-        if (panel.kind !== 'ip') continue;
-        (async () => {
-          for (let attempt = 0; attempt < PROBE_ATTEMPTS; attempt++) {
-            if (cancelled) return;
-            try {
-              const res = await getGeneralStatus(panel.deviceId);
-              if (panelAnswered(res)) {
-                if (!cancelled) reportReachability('ip', panel.deviceId, true);
-                return;
+
+      function probeAll() {
+        for (const panel of panels) {
+          if (panel.kind !== 'ip') continue;
+          (async () => {
+            for (let attempt = 0; attempt < PROBE_ATTEMPTS; attempt++) {
+              if (cancelled) return;
+              try {
+                const res = await getGeneralStatus(panel.deviceId);
+                if (panelAnswered(res)) {
+                  if (!cancelled) reportReachability('ip', panel.deviceId, true);
+                  return;
+                }
+              } catch {
+                // fall through to retry/offline below
               }
-            } catch {
-              // fall through to retry/offline below
+              if (attempt < PROBE_ATTEMPTS - 1) await delay(PROBE_RETRY_DELAY_MS);
             }
-            if (attempt < PROBE_ATTEMPTS - 1) await delay(PROBE_RETRY_DELAY_MS);
-          }
-          if (!cancelled) reportReachability('ip', panel.deviceId, false);
-        })();
+            if (!cancelled) reportReachability('ip', panel.deviceId, false);
+          })();
+        }
       }
+
+      probeAll();
+      const interval = setInterval(probeAll, POLL_INTERVAL_MS);
+
       return () => {
         cancelled = true;
+        clearInterval(interval);
       };
     }, [panels, reportReachability]),
   );
