@@ -32,6 +32,12 @@ export interface AccountDevice {
   Pin: string;
   DeviceId: number;
   IsOnline: boolean;
+  // White-label branding (client, 26/27 Oct): two jpgs uploaded against this panel's identifier,
+  // base64 encoded. Logo1 (portrait) replaces the eagle on the login screen, Logo2 (landscape)
+  // replaces the "ALARMAS TAUSEND" banner at the top of the home screen. Absent/empty means no
+  // custom branding is set for that slot.
+  Logo1Base64?: string;
+  Logo2Base64?: string;
 }
 
 // SMS-connected panel -- a distinct shape from AccountDevice (IP panels): no Mac/IsOnline (no

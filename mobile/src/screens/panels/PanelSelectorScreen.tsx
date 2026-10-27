@@ -6,7 +6,7 @@ import { GradientBackground } from '../../components/GradientBackground';
 import { Card } from '../../components/Card';
 import { StatusDot } from '../../components/StatusDot';
 import { useLocale } from '../../i18n/LocaleContext';
-import { usePanels, type Panel } from '../../panels/PanelContext';
+import { usePanels, resolveAccountBrand, type Panel } from '../../panels/PanelContext';
 import { getGeneralStatus } from '../../api/command';
 import { panelAnswered } from '../../panels/commandFeedback';
 import { FormField } from '../../components/FormField';
@@ -96,6 +96,11 @@ export function PanelSelectorScreen({ navigation }: { navigation: SelectorNaviga
     }, [panels, reportReachability]),
   );
 
+  // White-label branding (client, 26/27 Oct): this slot is the same portrait treatment as the
+  // login screen's (same asset, same centered-above-the-card layout), so it uses Logo1 too.
+  // Undefined falls back to EAGLE_LOGO below.
+  const brandLogo = resolveAccountBrand(panels)?.logo1Base64;
+
   // Client, 22 Oct: "the screen must be sorted alphabetically by device name" -- applied after the
   // search filter so a search still narrows the same alphabetical list rather than its own order.
   const filtered = panels
@@ -115,7 +120,11 @@ export function PanelSelectorScreen({ navigation }: { navigation: SelectorNaviga
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.logoWrap}>
-          <Image source={EAGLE_LOGO} style={styles.logo} resizeMode="contain" />
+          <Image
+            source={brandLogo ? { uri: `data:image/jpeg;base64,${brandLogo}` } : EAGLE_LOGO}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
         <Card style={styles.selectorCard}>
           <Text style={[styles.cardTitle, { color: colors.ink }]}>{t('Device selector')}</Text>

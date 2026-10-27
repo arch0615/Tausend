@@ -111,6 +111,10 @@ export function MainMenu({ visible, onClose }: { visible: boolean; onClose: () =
               <ListRow icon="🔖" iconColor={ICON_COLORS.violet} label={t('Device selector')} onPress={() => go('PanelSelector')} />
             )}
             <ListRow icon="🔧" iconColor={ICON_COLORS.slate} label={t('Installer mode')} onPress={() => go('InstallerMode')} />
+            {/* Client, 26 Oct: "it can be done from the installer menu" -- a separate gate from
+                Installer mode's own (that one checks the panel's section 003 code; this checks the
+                same identifier+pin credential CreateDeviceScreen uses to pair a panel). */}
+            <ListRow icon="🖼" iconColor={ICON_COLORS.cyan} label={t('Set custom logo')} onPress={() => go('SetPanelLogo')} />
             {selected && (
               <ListRow
                 icon="⎋"

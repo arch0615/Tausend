@@ -54,7 +54,8 @@ namespace TausendBackend.Api.Migrations
                 SELECT AT.AccountID, Email, FirstName, LastName, CAST(@AccessToken AS CHAR(36)), D.Description, D.Identifier, ADP.PIN, D.DeviceId, A.Role,
                        CASE WHEN D.IsOnline = 1 AND D.LastConnection IS NOT NULL
                                  AND D.LastConnection > DATEADD(HOUR, -1, GETUTCDATE())
-                            THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END
+                            THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END,
+                       D.Logo1Base64, D.Logo2Base64
                 FROM Accounts A
                 LEFT JOIN AccessTokens AT ON AT.AccountID = A.AccountId
                 LEFT JOIN AccountDevicePins ADP ON ADP.AccountId = AT.AccountID
@@ -119,7 +120,8 @@ namespace TausendBackend.Api.Migrations
                 SELECT @AccountID, @Email, FirstName, LastName, CAST(@AccessToken AS CHAR(36)), D.Description, D.Identifier, ADP.PIN, D.DeviceId, A.Role,
                        CASE WHEN D.IsOnline = 1 AND D.LastConnection IS NOT NULL
                                  AND D.LastConnection > DATEADD(HOUR, -1, GETUTCDATE())
-                            THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END
+                            THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END,
+                       D.Logo1Base64, D.Logo2Base64
                 FROM Accounts A
                 LEFT JOIN AccountDevicePins ADP ON ADP.AccountId = @AccountId
                 LEFT JOIN Devices D ON D.DeviceId = ADP.DeviceId AND D.Enabled = 1
@@ -652,6 +654,39 @@ namespace TausendBackend.Api.Migrations
                 DELETE FROM AccessTokens WHERE AccountID IN (SELECT AccountId FROM @AccountsIds)
 
                 SELECT CAST(1 AS BIGINT)
+            END
+            """,
+
+            // White-label branding (client, 26/27 Oct): two uploaded jpgs, base64-encoded, replacing
+            // the default Tausend eagle/wordmark for every account this panel is linked to. Logo1 is
+            // portrait (login screen), Logo2 is landscape (the home screen's top banner). Guarded
+            // like the quarantine-account seed above, since ALTER TABLE has no CREATE OR ALTER
+            // equivalent and this still has to be a harmless no-op on every restart.
+            """
+            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = N'Logo1Base64' AND Object_ID = Object_ID(N'Devices'))
+            BEGIN
+                ALTER TABLE Devices ADD Logo1Base64 NVARCHAR(MAX) NULL
+            END
+            """,
+            """
+            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = N'Logo2Base64' AND Object_ID = Object_ID(N'Devices'))
+            BEGIN
+                ALTER TABLE Devices ADD Logo2Base64 NVARCHAR(MAX) NULL
+            END
+            """,
+            """
+            CREATE OR ALTER PROCEDURE [dbo].[SetDeviceLogos]
+                @Identifier NVARCHAR(20),
+                @Logo1Base64 NVARCHAR(MAX),
+                @Logo2Base64 NVARCHAR(MAX)
+            AS BEGIN
+                IF NOT EXISTS (SELECT 1 FROM Devices WHERE Identifier = @Identifier AND Enabled = 1) BEGIN
+                    SELECT -1
+                    RETURN 0
+                END
+                UPDATE Devices SET Logo1Base64 = @Logo1Base64, Logo2Base64 = @Logo2Base64, UpdatedDateTime = GETDATE()
+                WHERE Identifier = @Identifier AND Enabled = 1
+                SELECT 1
             END
             """,
 

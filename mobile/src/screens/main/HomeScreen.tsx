@@ -7,7 +7,7 @@ import { GradientBackground } from '../../components/GradientBackground';
 import { Card } from '../../components/Card';
 import { useLocale } from '../../i18n/LocaleContext';
 import { useAuth } from '../../auth/AuthContext';
-import { usePanels } from '../../panels/PanelContext';
+import { usePanels, resolveAccountBrand } from '../../panels/PanelContext';
 import {
   armAlarm,
   dayArmAlarm,
@@ -66,6 +66,11 @@ const PANEL_ICON = require('../../assets/images/icon-panel.png');
 // is what the client objected to, not-ready reuses that same shield and the two unreadable
 // states use its own "consultar estado" magnifier.
 const STATE_UNKNOWN_ICON = require('../../assets/images/icon-state-unknown.png');
+// White-label branding (client, 26/27 Oct): the default "ALARMAS TAUSEND" landscape wordmark shown
+// across TopBar's new banner when no custom Logo2 is set for the selected panel -- the client's own
+// asset for this slot, not a recreation with styled Text (their lettering is a custom distorted
+// font, not something a system font/fontWeight can match).
+const WORDMARK_BANNER = require('../../assets/images/wordmark-banner.png');
 
 // home.page.scss's .fail-button and its ion-label, verbatim: the size the client asked for in
 // both rounds ("deben ser como los de la APP en uso (la anterior)").
@@ -199,7 +204,7 @@ function IpHome({
   const { colors, typography, spacing } = useTheme();
   const { t } = useLocale();
   const { logout } = useAuth();
-  const { reachabilityOf, reportReachability } = usePanels();
+  const { panels, reachabilityOf, reportReachability } = usePanels();
   const [status, setStatus] = useState<ParsedStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -390,6 +395,7 @@ function IpHome({
         description={description}
         onMenu={() => setMenuOpen(true)}
         onSwitchPanel={() => navigation.navigate('PanelSelector')}
+        logo2Base64={resolveAccountBrand(panels)?.logo2Base64}
         onRefresh={fetchStatus}
         refreshing={loading}
       />
@@ -733,7 +739,7 @@ function SmsHome({ navigation }: { navigation: HomeNavigation }) {
   const { colors, typography, spacing } = useTheme();
   const { t } = useLocale();
   const { session } = useAuth();
-  const { selected } = usePanels();
+  const { panels, selected } = usePanels();
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -763,6 +769,7 @@ function SmsHome({ navigation }: { navigation: HomeNavigation }) {
         description={smsDevice?.Description ?? t('SMS panel')}
         onMenu={() => setMenuOpen(true)}
         onSwitchPanel={() => navigation.navigate('PanelSelector')}
+        logo2Base64={resolveAccountBrand(panels)?.logo2Base64}
       />
       <Text style={[typography.bodyDim, { color: colors.onDarkDim, marginBottom: spacing.lg }]}>
         {t(
@@ -821,15 +828,26 @@ function TopBar({
   onSwitchPanel,
   onRefresh,
   refreshing,
+  logo2Base64,
 }: {
   description: string;
   onMenu: () => void;
   onSwitchPanel: () => void;
   onRefresh?: () => void;
   refreshing?: boolean;
+  // White-label branding (client, 26/27 Oct): the custom landscape logo for whichever panel is
+  // this account's "effective brand" (see resolveAccountBrand) -- undefined shows WORDMARK_BANNER,
+  // the default Tausend look, rather than hiding the banner entirely.
+  logo2Base64?: string;
 }) {
   const { colors, spacing } = useTheme();
   return (
+    <>
+    <Image
+      source={logo2Base64 ? { uri: `data:image/jpeg;base64,${logo2Base64}` } : WORDMARK_BANNER}
+      style={[styles.brandBanner, { marginBottom: spacing.sm }]}
+      resizeMode="contain"
+    />
     <View style={[styles.topBar, { marginBottom: spacing.lg }]}>
       <MenuButton onPress={onMenu} />
       {onRefresh && (
@@ -853,6 +871,7 @@ function TopBar({
         </Text>
       </Pressable>
     </View>
+    </>
   );
 }
 
@@ -881,6 +900,12 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  // Landscape, full-width -- matches the client's own Logo2 mockup proportions (a wide strip, not
+  // a square), sitting above the hamburger/refresh/panel-pill row rather than inside it.
+  brandBanner: {
+    width: '100%',
+    height: 40,
   },
   // .btn-refresh: 30x30 circle, white with a 1px #f2f3f3 edge and a soft drop shadow.
   refreshCircle: {

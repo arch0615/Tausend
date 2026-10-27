@@ -43,7 +43,7 @@ AS BEGIN
 		VALUES (@RefreshToken, @AccountID, @CurrentUTCDateTime, DATEADD(DAY, 90, @CurrentUTCDateTime))
 	END
 
-	SELECT @AccountID, @Email, FirstName, LastName, CAST(@AccessToken AS CHAR(36)), D.Description, D.Identifier, ADP.PIN, D.DeviceId, A.Role, D.IsOnline
+	SELECT @AccountID, @Email, FirstName, LastName, CAST(@AccessToken AS CHAR(36)), D.Description, D.Identifier, ADP.PIN, D.DeviceId, A.Role, D.IsOnline, D.Logo1Base64, D.Logo2Base64
 	FROM Accounts A
 	LEFT JOIN AccountDevicePins ADP ON ADP.AccountId = @AccountId
 	LEFT JOIN Devices D ON D.DeviceId = ADP.DeviceId AND D.Enabled = 1

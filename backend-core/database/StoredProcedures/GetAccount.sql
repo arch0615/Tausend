@@ -5,7 +5,7 @@ AS	BEGIN
 	-- TRY_CAST: a malformed (non-GUID) token must not throw, just fail to match
 	DECLARE @TokenGuid UNIQUEIDENTIFIER = TRY_CAST(@AccessToken AS UNIQUEIDENTIFIER)
 
-	SELECT AT.AccountID, Email, FirstName, LastName, CAST(@AccessToken AS CHAR(36)), D.Description, D.Identifier, ADP.PIN, D.DeviceId, A.Role, D.IsOnline
+	SELECT AT.AccountID, Email, FirstName, LastName, CAST(@AccessToken AS CHAR(36)), D.Description, D.Identifier, ADP.PIN, D.DeviceId, A.Role, D.IsOnline, D.Logo1Base64, D.Logo2Base64
 	FROM Accounts A
 	LEFT JOIN AccessTokens AT ON AT.AccountID = A.AccountId
 	LEFT JOIN AccountDevicePins ADP ON ADP.AccountId = AT.AccountID

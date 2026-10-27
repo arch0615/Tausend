@@ -14,7 +14,7 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import { Text } from 'react-native';
-import { PanelProvider, usePanels, type Reachability } from '../src/panels/PanelContext';
+import { PanelProvider, usePanels, resolveAccountBrand, type Panel, type Reachability } from '../src/panels/PanelContext';
 
 let mockEmail = 'a@example.com';
 jest.mock('../src/auth/AuthContext', () => ({
@@ -99,5 +99,55 @@ describe('live panel reachability', () => {
       h.get().reportReachability('ip', 7, true);
     });
     expect(h.get().reachabilityOf('sms', 7)).toBe('unknown');
+  });
+});
+
+/**
+ * White-label branding (client, 26/27 Oct): the account's "effective brand" for screens that show
+ * a logo regardless of which panel is selected -- both Logo1 (login screen, portrait) and Logo2
+ * (home screen banner, landscape) come from the same panel, never mixed from two different ones.
+ * A pure function, so tested directly against hand-built panel lists rather than through the
+ * provider harness above.
+ */
+describe('resolveAccountBrand', () => {
+  const ip = (deviceId: number, logo1Base64?: string, logo2Base64?: string): Panel => ({
+    kind: 'ip',
+    deviceId,
+    description: `Panel ${deviceId}`,
+    identifier: `ID${deviceId}`,
+    logo1Base64,
+    logo2Base64,
+  });
+  const sms = (deviceId: number): Panel => ({ kind: 'sms', deviceId, description: `Sms ${deviceId}`, identifier: `S${deviceId}` });
+
+  it('returns undefined when no panel has a custom logo', () => {
+    expect(resolveAccountBrand([ip(1), ip(2), sms(3)])).toBeUndefined();
+  });
+
+  it('returns both logos from the first IP panel that has either set', () => {
+    expect(resolveAccountBrand([ip(1), ip(2, 'logo1B', 'logo2B'), ip(3, 'logo1C', 'logo2C')])).toEqual({
+      logo1Base64: 'logo1B',
+      logo2Base64: 'logo2B',
+    });
+  });
+
+  it('matches on either logo being set, not requiring both', () => {
+    expect(resolveAccountBrand([ip(1), ip(2, 'logo1B', undefined)])).toEqual({
+      logo1Base64: 'logo1B',
+      logo2Base64: undefined,
+    });
+  });
+
+  it('never picks up a logo from an SMS panel, even first in the list', () => {
+    // SMS panels have no logo fields at all -- this just pins that the 'ip' filter actually runs
+    // rather than happening to pass because none of the test's SMS panels could match anyway.
+    expect(resolveAccountBrand([sms(1), ip(2, 'logo1B', 'logo2B')])).toEqual({
+      logo1Base64: 'logo1B',
+      logo2Base64: 'logo2B',
+    });
+  });
+
+  it('returns undefined for an empty panel list', () => {
+    expect(resolveAccountBrand([])).toBeUndefined();
   });
 });

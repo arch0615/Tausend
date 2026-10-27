@@ -316,7 +316,9 @@ namespace TausendBackend.Api.Dao
                     // online/offline status for showed offline regardless of the panel's
                     // actual, correctly-tracked connection state (see GetDevice.sql, which
                     // does read this column correctly for command-sending purposes).
-                    IsOnline = !reader.IsDBNull(10) && reader.GetBoolean(10)
+                    IsOnline = !reader.IsDBNull(10) && reader.GetBoolean(10),
+                    Logo1Base64 = reader.IsDBNull(11) ? null : reader.GetString(11),
+                    Logo2Base64 = reader.IsDBNull(12) ? null : reader.GetString(12)
                 });
             }
             if (res != null && reader.NextResult())
