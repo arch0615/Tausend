@@ -654,6 +654,47 @@ namespace TausendBackend.Api.Migrations
                 SELECT CAST(1 AS BIGINT)
             END
             """,
+
+            // Client, 27 Oct: "Apagar notificaciones" on Gestionar central -- mutes one phone's
+            // push for one panel without touching any other phone/account sharing it. A row's mere
+            // existence means muted; see MutedPanelNotifications.sql for why there is no DB-level
+            // uniqueness constraint on (DeviceToken, Identifier).
+            """
+            IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE Name = N'MutedPanelNotifications')
+            BEGIN
+                CREATE TABLE [dbo].[MutedPanelNotifications]
+                (
+                    [MutedPanelNotificationId] BIGINT NOT NULL PRIMARY KEY IDENTITY(1,1),
+                    DeviceToken NVARCHAR(500) NOT NULL,
+                    [Identifier] NVARCHAR(20) NOT NULL
+                )
+            END
+            """,
+            """
+            CREATE OR ALTER PROCEDURE [dbo].[SetNotificationMute]
+                @DeviceToken NVARCHAR(500),
+                @Identifier NVARCHAR(20),
+                @Muted BIT
+            AS BEGIN
+                IF @Muted = 1 BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM MutedPanelNotifications WHERE DeviceToken = @DeviceToken AND Identifier = @Identifier)
+                        INSERT INTO MutedPanelNotifications(DeviceToken, Identifier) VALUES (@DeviceToken, @Identifier)
+                END ELSE BEGIN
+                    DELETE FROM MutedPanelNotifications WHERE DeviceToken = @DeviceToken AND Identifier = @Identifier
+                END
+                SELECT 1
+            END
+            """,
+            """
+            CREATE OR ALTER PROCEDURE [dbo].[IsNotificationMuted]
+                @DeviceToken NVARCHAR(500),
+                @Identifier NVARCHAR(20)
+            AS BEGIN
+                SELECT CASE WHEN EXISTS (
+                    SELECT 1 FROM MutedPanelNotifications WHERE DeviceToken = @DeviceToken AND Identifier = @Identifier
+                ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END
+            END
+            """,
         };
     }
 }

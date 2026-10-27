@@ -15,6 +15,7 @@ namespace TausendBackend.Api.Business
         private readonly NotificationBuilder _notificationBuilder;
         private readonly PushNotificationBusinessFactory _pushFactory;
         private readonly EventDao _eventDao;
+        private readonly NotificationMuteDao _muteDao;
 
         public NotificationBusiness(
             AccountBusiness accountBusiness,
@@ -22,7 +23,8 @@ namespace TausendBackend.Api.Business
             UserBusiness userBusiness,
             NotificationBuilder notificationBuilder,
             PushNotificationBusinessFactory pushFactory,
-            EventDao eventDao)
+            EventDao eventDao,
+            NotificationMuteDao muteDao)
         {
             _accountBusiness = accountBusiness;
             _deviceBusiness = deviceBusiness;
@@ -30,7 +32,17 @@ namespace TausendBackend.Api.Business
             _notificationBuilder = notificationBuilder;
             _pushFactory = pushFactory;
             _eventDao = eventDao;
+            _muteDao = muteDao;
         }
+
+        /// <summary>Client, 27 Oct: "Apagar notificaciones" on Gestionar central -- mutes this one
+        /// phone's push for this one panel, without affecting any other account/phone sharing
+        /// it.</summary>
+        public void SetNotificationMute(string deviceToken, string identifier, bool muted) =>
+            _muteDao.SetMuted(deviceToken, identifier, muted);
+
+        public bool IsNotificationMuted(string deviceToken, string identifier) =>
+            _muteDao.IsMuted(deviceToken, identifier);
 
         public string SendEmergencyNotification(long deviceId)
         {
@@ -38,12 +50,17 @@ namespace TausendBackend.Api.Business
             {
                 // System lookup (notifying every owner of the device), not scoped to one account.
                 var device = _deviceBusiness.GetDevice(deviceId, 0);
-                var owners = _accountBusiness.EnumOwnersOfDevice(device.Device?.Identifier ?? "");
+                var identifier = device.Device?.Identifier ?? "";
+                var owners = _accountBusiness.EnumOwnersOfDevice(identifier);
                 foreach (var account in owners)
                 {
                     var deviceTokens = _accountBusiness.EnumDeviceTokenOfAccount(account.AccountId);
                     foreach (var item in deviceTokens)
                     {
+                        // Client, 27 Oct: "Apagar notificaciones" -- skip only the phones that
+                        // muted this specific panel, not the account's other phones or other
+                        // accounts sharing it.
+                        if (_muteDao.IsMuted(item.Token, identifier)) continue;
                         _notificationBuilder.NotificationType = NotificationTypes.Medical;
                         _notificationBuilder.DeviceToken = item.Token;
                         _notificationBuilder.OS = item.OS;
@@ -79,6 +96,11 @@ namespace TausendBackend.Api.Business
                     var deviceTokens = _accountBusiness.EnumDeviceTokenOfAccount(account.AccountId);
                     foreach (var item in deviceTokens)
                     {
+                        // Client, 27 Oct: "Apagar notificaciones" -- skip only the phones that
+                        // muted this specific panel, not the account's other phones or other
+                        // accounts sharing it. The event itself is still logged below regardless,
+                        // this only withholds the push.
+                        if (_muteDao.IsMuted(item.Token, request.AlarmIdentifier)) continue;
                         _notificationBuilder.NotificationType = (NotificationTypes)request.NotificationType;
                         _notificationBuilder.AlarmParameter = request.AlarmParameter;
                         _notificationBuilder.EventType = request.EventType;

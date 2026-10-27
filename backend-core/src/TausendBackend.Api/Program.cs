@@ -53,6 +53,7 @@ builder.Services.AddScoped<ScheduledPgmActionBusiness>();
 builder.Services.AddScoped<UserDao>();
 builder.Services.AddScoped<UserBusiness>();
 builder.Services.AddScoped<EventDao>();
+builder.Services.AddScoped<NotificationMuteDao>();
 // Singleton: holds the long-lived HttpClient and the FCM OAuth token cache for the app's
 // lifetime -- see PushNotificationBusinessFactory / FirebasePushNotificationBusiness.
 builder.Services.AddSingleton<PushNotificationBusinessFactory>();

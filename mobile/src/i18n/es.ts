@@ -449,6 +449,12 @@ export const es: Record<string, string> = {
   'Unlink this panel': 'Desvincular esta central',
   Unlink: 'Desvincular',
   'Could not unlink this panel.': 'No se pudo desvincular esta central.',
+
+  // ManagePanelScreen.tsx, "Apagar notificaciones" (client, 27 Oct). Spanish strings match the
+  // client's own mockup wording exactly.
+  'Turn notifications off': 'Apagar notificaciones',
+  'Turn notifications on': 'Encender notificaciones',
+  'This action only turns off notifications on this device.': 'Ésta acción solo apaga las notificaciones en éste dispositivo',
   // Client mockup, 20 Oct: "BLOQUEAR CENTRAL: Change to DESVINCULAR PARA TODOS" /
   // "REESTABLECER CENTRAL: Change to ELIMINAR PARA TODOS". The first is a title and button rename
   // only -- their own mockup is a screenshot of the dialog below with the body text untouched.
