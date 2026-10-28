@@ -134,7 +134,7 @@ namespace TausendBackend.Api.Controllers
             }
             if (pinCheck == "ok")
             {
-                return _deviceBusiness.SetDeviceLogos(request.Identifier, request.Logo1Base64, request.Logo2Base64);
+                return _deviceBusiness.SetDeviceLogos(request.Identifier, request.Logo1Base64, request.Logo1MimeType, request.Logo2Base64, request.Logo2MimeType);
             }
             if (pinCheck == "invalid")
             {

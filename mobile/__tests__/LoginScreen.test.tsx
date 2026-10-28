@@ -156,10 +156,12 @@ describe('login screen branding cache', () => {
   });
 
   it('shows the cached brand logo instead of the eagle/wordmark once loaded', async () => {
-    await AsyncStorage.setItem('tausend-cached-brand-logo1', 'cachedBase64');
+    // The cache holds a ready-to-render data URI (mime type already baked in by AuthContext's
+    // resolveLogo1FromDevices), not raw base64 -- see branding/logoUri.ts.
+    await AsyncStorage.setItem('tausend-cached-brand-logo1', 'data:image/png;base64,cachedBase64');
     const tree = await mount();
     const logo = tree.root.findByType(Image);
-    expect(logo.props.source).toEqual({ uri: 'data:image/jpeg;base64,cachedBase64' });
+    expect(logo.props.source).toEqual({ uri: 'data:image/png;base64,cachedBase64' });
     expect(tree.root.findAllByType(Text).some((n) => n.props.children === 'ALARMAS')).toBe(false);
   });
 });

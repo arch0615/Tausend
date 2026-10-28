@@ -32,7 +32,7 @@ const mockOpenSmsComposer = jest.fn().mockResolvedValue(true);
 jest.mock('../src/pairing/smsIntent', () => ({
   openSmsComposer: (phone: string, body: string) => mockOpenSmsComposer(phone, body),
 }));
-let mockBrand: { logo1Base64?: string; logo2Base64?: string } | undefined;
+let mockBrand: { logo1Uri?: string; logo2Uri?: string } | undefined;
 jest.mock('../src/panels/PanelContext', () => ({
   usePanels: () => ({ panels: [{ kind: 'sms', deviceId: 21, description: 'Sms1' }], selected: { kind: 'sms', deviceId: 21, description: 'Sms1' } }),
   resolveAccountBrand: () => mockBrand,
@@ -154,7 +154,7 @@ describe('Home screen top banner (Logo2)', () => {
   });
 
   it('shows the custom Logo2 image once the account has one', () => {
-    mockBrand = { logo2Base64: 'bannerXYZ' };
+    mockBrand = { logo2Uri: 'data:image/jpeg;base64,bannerXYZ' };
     const tree = render();
     const banner = tree.root.findAllByType(Image)[0];
     expect(banner.props.source).toEqual({ uri: 'data:image/jpeg;base64,bannerXYZ' });

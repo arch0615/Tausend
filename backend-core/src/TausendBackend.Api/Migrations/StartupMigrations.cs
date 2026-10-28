@@ -55,7 +55,7 @@ namespace TausendBackend.Api.Migrations
                        CASE WHEN D.IsOnline = 1 AND D.LastConnection IS NOT NULL
                                  AND D.LastConnection > DATEADD(HOUR, -1, GETUTCDATE())
                             THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END,
-                       D.Logo1Base64, D.Logo2Base64
+                       D.Logo1Base64, D.Logo1MimeType, D.Logo2Base64, D.Logo2MimeType
                 FROM Accounts A
                 LEFT JOIN AccessTokens AT ON AT.AccountID = A.AccountId
                 LEFT JOIN AccountDevicePins ADP ON ADP.AccountId = AT.AccountID
@@ -121,7 +121,7 @@ namespace TausendBackend.Api.Migrations
                        CASE WHEN D.IsOnline = 1 AND D.LastConnection IS NOT NULL
                                  AND D.LastConnection > DATEADD(HOUR, -1, GETUTCDATE())
                             THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END,
-                       D.Logo1Base64, D.Logo2Base64
+                       D.Logo1Base64, D.Logo1MimeType, D.Logo2Base64, D.Logo2MimeType
                 FROM Accounts A
                 LEFT JOIN AccountDevicePins ADP ON ADP.AccountId = @AccountId
                 LEFT JOIN Devices D ON D.DeviceId = ADP.DeviceId AND D.Enabled = 1
@@ -674,17 +674,40 @@ namespace TausendBackend.Api.Migrations
                 ALTER TABLE Devices ADD Logo2Base64 NVARCHAR(MAX) NULL
             END
             """,
+
+            // Client, 28 Oct: "it should admit both with and without background so it should be
+            // JPG or PNG" -- the picker's own detected MIME type, not assumed. JPG has no
+            // transparency, so a backgroundless logo must actually be stored/served as PNG or the
+            // transparent area renders as a solid color instead of "the app background screen"
+            // showing through, which is what the client asked for.
+            """
+            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = N'Logo1MimeType' AND Object_ID = Object_ID(N'Devices'))
+            BEGIN
+                ALTER TABLE Devices ADD Logo1MimeType NVARCHAR(20) NULL
+            END
+            """,
+            """
+            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = N'Logo2MimeType' AND Object_ID = Object_ID(N'Devices'))
+            BEGIN
+                ALTER TABLE Devices ADD Logo2MimeType NVARCHAR(20) NULL
+            END
+            """,
             """
             CREATE OR ALTER PROCEDURE [dbo].[SetDeviceLogos]
                 @Identifier NVARCHAR(20),
                 @Logo1Base64 NVARCHAR(MAX),
-                @Logo2Base64 NVARCHAR(MAX)
+                @Logo1MimeType NVARCHAR(20),
+                @Logo2Base64 NVARCHAR(MAX),
+                @Logo2MimeType NVARCHAR(20)
             AS BEGIN
                 IF NOT EXISTS (SELECT 1 FROM Devices WHERE Identifier = @Identifier AND Enabled = 1) BEGIN
                     SELECT -1
                     RETURN 0
                 END
-                UPDATE Devices SET Logo1Base64 = @Logo1Base64, Logo2Base64 = @Logo2Base64, UpdatedDateTime = GETDATE()
+                UPDATE Devices SET
+                    Logo1Base64 = @Logo1Base64, Logo1MimeType = @Logo1MimeType,
+                    Logo2Base64 = @Logo2Base64, Logo2MimeType = @Logo2MimeType,
+                    UpdatedDateTime = GETDATE()
                 WHERE Identifier = @Identifier AND Enabled = 1
                 SELECT 1
             END

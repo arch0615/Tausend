@@ -5,12 +5,13 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { GradientBackground } from '../../components/GradientBackground';
 import { useLocale } from '../../i18n/LocaleContext';
-import { setDeviceLogos } from '../../api/device';
+import { setDeviceLogos, type LogoUpload } from '../../api/device';
 import { ResponseState } from '../../api/types';
 import { FormField } from '../../components/FormField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Banner } from '../../components/Banner';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
+import { logoDataUri } from '../../branding/logoUri';
 
 // Client, 26/27 Oct: an installer-facing screen, reachable from the main menu near Installer mode,
 // that sets the white-label logos for a panel by its identifier. Gated by the exact same live
@@ -26,16 +27,18 @@ export function SetPanelLogoScreen() {
   const navigation = useNavigation();
   const [identifier, setIdentifier] = useState('');
   const [pin, setPin] = useState('');
-  const [logo1Base64, setLogo1Base64] = useState<string | null>(null);
-  const [logo2Base64, setLogo2Base64] = useState<string | null>(null);
+  const [logo1, setLogo1] = useState<LogoUpload | null>(null);
+  const [logo2, setLogo2] = useState<LogoUpload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Kept small on purpose: these images ride along in every login response for every account that
   // has this panel linked, not fetched on demand -- a multi-megabyte photo would bloat every one
-  // of those logins for a logo nobody needs at full resolution.
-  async function pickImage(onPicked: (base64: string) => void) {
+  // of those logins for a logo nobody needs at full resolution. mediaType: 'photo' already accepts
+  // both jpg and png (client, 28 Oct: "it should admit both with and without background so it
+  // should be JPG or PNG") -- the actual detected type travels with the picked asset.
+  async function pickImage(onPicked: (upload: LogoUpload) => void) {
     setError(null);
     const result = await launchImageLibrary({
       mediaType: 'photo',
@@ -45,17 +48,18 @@ export function SetPanelLogoScreen() {
       quality: 0.8,
     });
     if (result.didCancel) return;
-    if (result.errorMessage || !result.assets?.[0]?.base64) {
+    const asset = result.assets?.[0];
+    if (result.errorMessage || !asset?.base64) {
       setError(t('Could not read that image.'));
       return;
     }
-    onPicked(result.assets[0].base64);
+    onPicked({ base64: asset.base64, mimeType: asset.type || 'image/jpeg' });
   }
 
   function validate(): string | null {
     if (!identifier.trim()) return t("Enter the panel's identifier.");
     if (!/^\d{4}$/.test(pin)) return t('The PIN must be 4 digits.');
-    if (!logo1Base64 || !logo2Base64) return t('Choose both logos first.');
+    if (!logo1 || !logo2) return t('Choose both logos first.');
     return null;
   }
 
@@ -71,13 +75,13 @@ export function SetPanelLogoScreen() {
     try {
       // Live-validates against the panel through the relay, same as pairing -- can take several
       // seconds and can fail with "offline" as well as "wrong PIN".
-      const res = await setDeviceLogos(identifier.trim(), pin, logo1Base64!, logo2Base64!);
+      const res = await setDeviceLogos(identifier.trim(), pin, logo1!, logo2!);
       if (res.State === ResponseState.OK) {
         setSuccess(true);
         setIdentifier('');
         setPin('');
-        setLogo1Base64(null);
-        setLogo2Base64(null);
+        setLogo1(null);
+        setLogo2(null);
         return;
       }
       setError(res.Message || t('Could not set the logos.'));
@@ -124,20 +128,20 @@ export function SetPanelLogoScreen() {
             <Text style={[typography.label, { color: colors.onDarkDim, marginTop: spacing.lg, marginBottom: spacing.xs }]}>
               {t('Logo 1 (portrait, login screen)')}
             </Text>
-            <PrimaryButton title={t('Choose image')} onPress={() => pickImage(setLogo1Base64)} tone="outline" disabled={submitting} />
-            {logo1Base64 && (
+            <PrimaryButton title={t('Choose image')} onPress={() => pickImage(setLogo1)} tone="outline" disabled={submitting} />
+            {logo1 && (
               <View style={[styles.previewWrap, { marginTop: spacing.md }]}>
-                <Image source={{ uri: `data:image/jpeg;base64,${logo1Base64}` }} style={styles.previewPortrait} resizeMode="contain" />
+                <Image source={{ uri: logoDataUri(logo1.base64, logo1.mimeType) }} style={styles.previewPortrait} resizeMode="contain" />
               </View>
             )}
 
             <Text style={[typography.label, { color: colors.onDarkDim, marginTop: spacing.lg, marginBottom: spacing.xs }]}>
               {t('Logo 2 (landscape, home screen banner)')}
             </Text>
-            <PrimaryButton title={t('Choose image')} onPress={() => pickImage(setLogo2Base64)} tone="outline" disabled={submitting} />
-            {logo2Base64 && (
+            <PrimaryButton title={t('Choose image')} onPress={() => pickImage(setLogo2)} tone="outline" disabled={submitting} />
+            {logo2 && (
               <View style={[styles.previewWrap, { marginTop: spacing.md }]}>
-                <Image source={{ uri: `data:image/jpeg;base64,${logo2Base64}` }} style={styles.previewLandscape} resizeMode="contain" />
+                <Image source={{ uri: logoDataUri(logo2.base64, logo2.mimeType) }} style={styles.previewLandscape} resizeMode="contain" />
               </View>
             )}
 

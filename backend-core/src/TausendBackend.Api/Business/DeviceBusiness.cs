@@ -252,12 +252,12 @@ namespace TausendBackend.Api.Business
 
         /// <summary>Caller must have already passed ValidatePinOnDevice for this identifier+pin --
         /// this only writes the logo, it does not re-check the credential.</summary>
-        public SimpleResponse SetDeviceLogos(string identifier, string logo1Base64, string logo2Base64)
+        public SimpleResponse SetDeviceLogos(string identifier, string logo1Base64, string logo1MimeType, string logo2Base64, string logo2MimeType)
         {
             var response = new SimpleResponse();
             try
             {
-                var res = _dao.SetDeviceLogos(identifier, logo1Base64, logo2Base64);
+                var res = _dao.SetDeviceLogos(identifier, logo1Base64, logo1MimeType, logo2Base64, logo2MimeType);
                 if (res == 1)
                 {
                     response.InformOk();

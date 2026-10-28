@@ -7,13 +7,18 @@
 CREATE PROCEDURE [dbo].[SetDeviceLogos]
 	@Identifier NVARCHAR(20),
 	@Logo1Base64 NVARCHAR(MAX),
-	@Logo2Base64 NVARCHAR(MAX)
+	@Logo1MimeType NVARCHAR(20),
+	@Logo2Base64 NVARCHAR(MAX),
+	@Logo2MimeType NVARCHAR(20)
 AS BEGIN
 	IF NOT EXISTS (SELECT 1 FROM Devices WHERE Identifier = @Identifier AND Enabled = 1) BEGIN
 		SELECT -1
 		RETURN 0
 	END
-	UPDATE Devices SET Logo1Base64 = @Logo1Base64, Logo2Base64 = @Logo2Base64, UpdatedDateTime = GETDATE()
+	UPDATE Devices SET
+		Logo1Base64 = @Logo1Base64, Logo1MimeType = @Logo1MimeType,
+		Logo2Base64 = @Logo2Base64, Logo2MimeType = @Logo2MimeType,
+		UpdatedDateTime = GETDATE()
 	WHERE Identifier = @Identifier AND Enabled = 1
 	SELECT 1
 END

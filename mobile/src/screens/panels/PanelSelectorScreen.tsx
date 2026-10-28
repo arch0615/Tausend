@@ -99,7 +99,7 @@ export function PanelSelectorScreen({ navigation }: { navigation: SelectorNaviga
   // White-label branding (client, 26/27 Oct): this slot is the same portrait treatment as the
   // login screen's (same asset, same centered-above-the-card layout), so it uses Logo1 too.
   // Undefined falls back to EAGLE_LOGO below.
-  const brandLogo = resolveAccountBrand(panels)?.logo1Base64;
+  const brandLogo = resolveAccountBrand(panels)?.logo1Uri;
 
   // Client, 22 Oct: "the screen must be sorted alphabetically by device name" -- applied after the
   // search filter so a search still narrows the same alphabetical list rather than its own order.
@@ -121,7 +121,7 @@ export function PanelSelectorScreen({ navigation }: { navigation: SelectorNaviga
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.logoWrap}>
           <Image
-            source={brandLogo ? { uri: `data:image/jpeg;base64,${brandLogo}` } : EAGLE_LOGO}
+            source={brandLogo ? { uri: brandLogo } : EAGLE_LOGO}
             style={styles.logo}
             resizeMode="contain"
           />

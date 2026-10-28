@@ -36,7 +36,8 @@ export function LoginScreen({ route, navigation }: Props) {
   // White-label branding (client, 26 Oct): this screen renders before any account is known, so it
   // can only show the brand remembered from the last successful login on this device -- see
   // branding/brandCache.ts. Undefined until the read completes, which briefly shows the default
-  // Tausend mark even on a branded device; null/absent cache falls back to it permanently.
+  // Tausend mark even on a branded device; null/absent cache falls back to it permanently. Already
+  // a ready-to-render data URI (mime type baked in), not raw base64 -- see logoUri.ts.
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
 
   useEffect(() => {
@@ -113,7 +114,7 @@ export function LoginScreen({ route, navigation }: Props) {
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.logoWrap}>
           <Image
-            source={brandLogo ? { uri: `data:image/jpeg;base64,${brandLogo}` } : EAGLE_LOGO}
+            source={brandLogo ? { uri: brandLogo } : EAGLE_LOGO}
             style={styles.logo}
             resizeMode="contain"
           />

@@ -6,6 +6,8 @@ namespace TausendBackend.Api.Requests
         public string Identifier { get; set; } = "";
         public string Pin { get; set; } = "";
         public string Logo1Base64 { get; set; } = "";
+        public string Logo1MimeType { get; set; } = "";
         public string Logo2Base64 { get; set; } = "";
+        public string Logo2MimeType { get; set; } = "";
     }
 }

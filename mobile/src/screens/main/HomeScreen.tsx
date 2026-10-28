@@ -395,7 +395,7 @@ function IpHome({
         description={description}
         onMenu={() => setMenuOpen(true)}
         onSwitchPanel={() => navigation.navigate('PanelSelector')}
-        logo2Base64={resolveAccountBrand(panels)?.logo2Base64}
+        logo2Uri={resolveAccountBrand(panels)?.logo2Uri}
         onRefresh={fetchStatus}
         refreshing={loading}
       />
@@ -769,7 +769,7 @@ function SmsHome({ navigation }: { navigation: HomeNavigation }) {
         description={smsDevice?.Description ?? t('SMS panel')}
         onMenu={() => setMenuOpen(true)}
         onSwitchPanel={() => navigation.navigate('PanelSelector')}
-        logo2Base64={resolveAccountBrand(panels)?.logo2Base64}
+        logo2Uri={resolveAccountBrand(panels)?.logo2Uri}
       />
       <Text style={[typography.bodyDim, { color: colors.onDarkDim, marginBottom: spacing.lg }]}>
         {t(
@@ -828,7 +828,7 @@ function TopBar({
   onSwitchPanel,
   onRefresh,
   refreshing,
-  logo2Base64,
+  logo2Uri,
 }: {
   description: string;
   onMenu: () => void;
@@ -838,13 +838,13 @@ function TopBar({
   // White-label branding (client, 26/27 Oct): the custom landscape logo for whichever panel is
   // this account's "effective brand" (see resolveAccountBrand) -- undefined shows WORDMARK_BANNER,
   // the default Tausend look, rather than hiding the banner entirely.
-  logo2Base64?: string;
+  logo2Uri?: string;
 }) {
   const { colors, spacing } = useTheme();
   return (
     <>
     <Image
-      source={logo2Base64 ? { uri: `data:image/jpeg;base64,${logo2Base64}` } : WORDMARK_BANNER}
+      source={logo2Uri ? { uri: logo2Uri } : WORDMARK_BANNER}
       style={[styles.brandBanner, { marginBottom: spacing.sm }]}
       resizeMode="contain"
     />

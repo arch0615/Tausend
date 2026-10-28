@@ -103,20 +103,24 @@ describe('live panel reachability', () => {
 });
 
 /**
- * White-label branding (client, 26/27 Oct): the account's "effective brand" for screens that show
- * a logo regardless of which panel is selected -- both Logo1 (login screen, portrait) and Logo2
- * (home screen banner, landscape) come from the same panel, never mixed from two different ones.
+ * White-label branding (client, 26/27/28 Oct): the account's "effective brand" for screens that
+ * show a logo regardless of which panel is selected -- both Logo1 (login screen, portrait) and
+ * Logo2 (home screen banner, landscape) come from the same panel, never mixed from two different
+ * ones, and each is returned as a ready-to-render data URI with the real stored mime type baked
+ * in (not a hardcoded image/jpeg), since a PNG shown as if it were a JPEG loses its transparency.
  * A pure function, so tested directly against hand-built panel lists rather than through the
  * provider harness above.
  */
 describe('resolveAccountBrand', () => {
-  const ip = (deviceId: number, logo1Base64?: string, logo2Base64?: string): Panel => ({
+  const ip = (deviceId: number, logo1Base64?: string, logo2Base64?: string, mimeType = 'image/jpeg'): Panel => ({
     kind: 'ip',
     deviceId,
     description: `Panel ${deviceId}`,
     identifier: `ID${deviceId}`,
     logo1Base64,
+    logo1MimeType: logo1Base64 ? mimeType : undefined,
     logo2Base64,
+    logo2MimeType: logo2Base64 ? mimeType : undefined,
   });
   const sms = (deviceId: number): Panel => ({ kind: 'sms', deviceId, description: `Sms ${deviceId}`, identifier: `S${deviceId}` });
 
@@ -124,17 +128,17 @@ describe('resolveAccountBrand', () => {
     expect(resolveAccountBrand([ip(1), ip(2), sms(3)])).toBeUndefined();
   });
 
-  it('returns both logos from the first IP panel that has either set', () => {
+  it('returns both logos from the first IP panel that has either set, as data URIs', () => {
     expect(resolveAccountBrand([ip(1), ip(2, 'logo1B', 'logo2B'), ip(3, 'logo1C', 'logo2C')])).toEqual({
-      logo1Base64: 'logo1B',
-      logo2Base64: 'logo2B',
+      logo1Uri: 'data:image/jpeg;base64,logo1B',
+      logo2Uri: 'data:image/jpeg;base64,logo2B',
     });
   });
 
   it('matches on either logo being set, not requiring both', () => {
     expect(resolveAccountBrand([ip(1), ip(2, 'logo1B', undefined)])).toEqual({
-      logo1Base64: 'logo1B',
-      logo2Base64: undefined,
+      logo1Uri: 'data:image/jpeg;base64,logo1B',
+      logo2Uri: undefined,
     });
   });
 
@@ -142,8 +146,17 @@ describe('resolveAccountBrand', () => {
     // SMS panels have no logo fields at all -- this just pins that the 'ip' filter actually runs
     // rather than happening to pass because none of the test's SMS panels could match anyway.
     expect(resolveAccountBrand([sms(1), ip(2, 'logo1B', 'logo2B')])).toEqual({
-      logo1Base64: 'logo1B',
-      logo2Base64: 'logo2B',
+      logo1Uri: 'data:image/jpeg;base64,logo1B',
+      logo2Uri: 'data:image/jpeg;base64,logo2B',
+    });
+  });
+
+  it('bakes the real stored mime type into the URI, not a hardcoded image/jpeg', () => {
+    // Client, 28 Oct: "it should admit both with and without background so it should be JPG or
+    // PNG" -- a PNG rendered under a forced image/jpeg data URI loses its transparency.
+    expect(resolveAccountBrand([ip(1, 'logo1B', 'logo2B', 'image/png')])).toEqual({
+      logo1Uri: 'data:image/png;base64,logo1B',
+      logo2Uri: 'data:image/png;base64,logo2B',
     });
   });
 

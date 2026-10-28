@@ -1,20 +1,24 @@
 import { apiPost } from './client';
 import type { NewCreatedDeviceResponse, BaseResponse, DisassociateCentralResponse, TimeResponse } from './types';
 
-// White-label branding (client, 26/27 Oct): live-validates identifier+pin against the panel
+// White-label branding (client, 26/27/28 Oct): live-validates identifier+pin against the panel
 // itself, exactly like createDevice above -- same several-seconds-and-can-say-offline caveat
-// applies. Both logos are set together, matching the client's own one-step upload spec.
-export function setDeviceLogos(
-  identifier: string,
-  pin: string,
-  logo1Base64: string,
-  logo2Base64: string,
-): Promise<BaseResponse> {
+// applies. Both logos are set together, matching the client's own one-step upload spec. mimeType
+// is the picker's own detected type (image/jpeg or image/png) -- carried through so a transparent
+// PNG stays transparent instead of being displayed as if it were an opaque JPEG.
+export interface LogoUpload {
+  base64: string;
+  mimeType: string;
+}
+
+export function setDeviceLogos(identifier: string, pin: string, logo1: LogoUpload, logo2: LogoUpload): Promise<BaseResponse> {
   return apiPost<BaseResponse>('DeviceService/SetDeviceLogos', {
     Identifier: identifier,
     Pin: pin,
-    Logo1Base64: logo1Base64,
-    Logo2Base64: logo2Base64,
+    Logo1Base64: logo1.base64,
+    Logo1MimeType: logo1.mimeType,
+    Logo2Base64: logo2.base64,
+    Logo2MimeType: logo2.mimeType,
   });
 }
 

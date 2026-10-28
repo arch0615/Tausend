@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../auth/AuthContext';
+import { logoDataUri } from '../branding/logoUri';
 
 // A "panel" here unifies AccountDevice (IP) and AccountSmsDevice (SMS) into one list for
 // selection UI. The previous (Ionic) app tracked selection as an index into whichever of two
@@ -26,12 +27,16 @@ export interface Panel {
   // on the login screen; Logo2 (landscape) replaces the "ALARMAS TAUSEND" banner at the top of the
   // home screen. Absent/empty means no custom branding is set for that slot.
   logo1Base64?: string;
+  logo1MimeType?: string;
   logo2Base64?: string;
+  logo2MimeType?: string;
 }
 
 export interface AccountBrand {
-  logo1Base64?: string;
-  logo2Base64?: string;
+  // Pre-built data: URIs (see branding/logoUri.ts), not raw base64 -- every consumer just needs
+  // <Image source={{uri}}>, none of them should have to know about MimeType at all.
+  logo1Uri?: string;
+  logo2Uri?: string;
 }
 
 /**
@@ -45,7 +50,10 @@ export interface AccountBrand {
 export function resolveAccountBrand(panels: Panel[]): AccountBrand | undefined {
   const branded = panels.find((p) => p.kind === 'ip' && (p.logo1Base64 || p.logo2Base64));
   if (!branded) return undefined;
-  return { logo1Base64: branded.logo1Base64, logo2Base64: branded.logo2Base64 };
+  return {
+    logo1Uri: branded.logo1Base64 ? logoDataUri(branded.logo1Base64, branded.logo1MimeType) : undefined,
+    logo2Uri: branded.logo2Base64 ? logoDataUri(branded.logo2Base64, branded.logo2MimeType) : undefined,
+  };
 }
 
 /** 'unknown' means no live command has been attempted for this panel yet this session. */
@@ -97,7 +105,9 @@ export function PanelProvider({ children }: { children: ReactNode }) {
         identifier: d.Mac,
         isOnline: d.IsOnline,
         logo1Base64: d.Logo1Base64,
+        logo1MimeType: d.Logo1MimeType,
         logo2Base64: d.Logo2Base64,
+        logo2MimeType: d.Logo2MimeType,
       }));
     const smsPanels: Panel[] = session.account.SmsDevices.map((d) => ({
       kind: 'sms',
