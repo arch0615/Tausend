@@ -449,20 +449,21 @@ export const es: Record<string, string> = {
   'Unlink this panel': 'Desvincular esta central',
   Unlink: 'Desvincular',
   'Could not unlink this panel.': 'No se pudo desvincular esta central.',
-  'Lock this panel?': '¿Bloquear esta central?',
-  'Reset this panel?': '¿Restablecer esta central?',
+  // Client mockup, 20 Oct: "BLOQUEAR CENTRAL: Change to DESVINCULAR PARA TODOS" /
+  // "REESTABLECER CENTRAL: Change to ELIMINAR PARA TODOS". The first is a title and button rename
+  // only -- their own mockup is a screenshot of the dialog below with the body text untouched.
+  // The second comes with new, shorter dialog text of its own.
+  'Unlink for everyone?': '¿Desvincular para todos?',
+  'Delete for everyone?': '¿Eliminar para todos?',
   'This immediately revokes app control of the panel and signs out everyone who has it linked, including you. To restore access, link it again with the same identifier and user code.':
     'Esto revoca de inmediato el control de la app sobre la central y cierra la sesión de todos los que la tienen vinculada, incluido tú. Para restaurar el acceso, vinculala de nuevo con el mismo identificador y código de usuario.',
-  "This wipes the panel from your account entirely and signs out everyone who has it linked, including you. You'll need to pair it again from scratch.":
-    'Esto elimina la central de tu cuenta por completo y cierra la sesión de todos los que la tienen vinculada, incluido tú. Tendrás que emparejarla de nuevo desde cero.',
-  Lock: 'Bloquear',
-  Reset: 'Restablecer',
+  'This removes the panel from every account.': 'Esto elimina la central de todas las cuentas.',
   'Could not complete this action.': 'No se pudo completar esta acción.',
   'Access code lockout': 'Bloqueo por código de usuario',
   'These affect everyone who has this panel linked, not just you.':
     'Estas acciones afectan a todos los que tienen esta central vinculada, no solo a ti.',
-  'Lock this panel': 'Bloquear esta central',
-  'Reset this panel': 'Restablecer esta central',
+  'Unlink for everyone': 'Desvincular para todos',
+  'Delete for everyone': 'Eliminar para todos',
   Description: 'Descripción',
   Identifier: 'Identificador',
   'User code': 'Código de usuario',

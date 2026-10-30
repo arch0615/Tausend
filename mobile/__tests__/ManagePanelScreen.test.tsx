@@ -14,7 +14,7 @@
 
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import { Text } from 'react-native';
+import { Alert, Text } from 'react-native';
 import { ManagePanelScreen } from '../src/screens/panels/ManagePanelScreen';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
 import { LocaleProvider } from '../src/i18n/LocaleContext';
@@ -102,5 +102,58 @@ describe('Gestionar central, IP panel', () => {
     expect(l).toContain('Código de usuario');
     expect(l).not.toContain('Número de teléfono');
     expect(fieldValues(tree)).toContain('CPF6951000298001');
+  });
+});
+
+/**
+ * Client mockup, 20 Oct: "BLOQUEAR CENTRAL: Change to DESVINCULAR PARA TODOS" /
+ * "REESTABLECER CENTRAL: Change to ELIMINAR PARA TODOS".
+ *
+ * Their own mockup for the first is a screenshot of the real dialog with only the title and
+ * button relabelled -- body text untouched, so that one is pinned as a pure rename. Their mockup
+ * for the second is a different, hand-made graphic with its own short new text, backed by a
+ * written spec calling for the panel's identifier to be deleted from the server, so that one is
+ * pinned on title, button AND body text, since all three changed.
+ */
+describe('Gestionar central, IP panel, the two account-wide actions', () => {
+  function pressButton(tree: ReactTestRenderer.ReactTestRenderer, label: string) {
+    const textNode = tree.root.findAllByType(Text).find((n) => n.props.children === label)!;
+    let node = textNode;
+    while (typeof node.props.onPress !== 'function') node = node.parent!;
+    ReactTestRenderer.act(() => node.props.onPress());
+  }
+
+  let alertSpy: jest.SpyInstance;
+  beforeEach(() => {
+    alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  });
+  afterEach(() => alertSpy.mockRestore());
+
+  it('shows the new button text and not the old', () => {
+    const l = labels(render('ip', 7));
+    expect(l).toContain('Desvincular para todos');
+    expect(l).toContain('Eliminar para todos');
+    expect(l).not.toContain('Bloquear esta central');
+    expect(l).not.toContain('Restablecer esta central');
+    // the section header above them is not part of this request and stays as it was
+    expect(l).toContain('Bloqueo por código de usuario');
+  });
+
+  it('keeps the unlink dialog\'s own body text unchanged -- a title and button rename only', () => {
+    pressButton(render('ip', 7), 'Desvincular para todos');
+    expect(alertSpy).toHaveBeenCalledWith(
+      '¿Desvincular para todos?',
+      'Esto revoca de inmediato el control de la app sobre la central y cierra la sesión de todos los que la tienen vinculada, incluido tú. Para restaurar el acceso, vinculala de nuevo con el mismo identificador y código de usuario.',
+      expect.arrayContaining([expect.objectContaining({ text: 'Desvincular' })]),
+    );
+  });
+
+  it('gives the delete dialog its own new title, body and button text', () => {
+    pressButton(render('ip', 7), 'Eliminar para todos');
+    expect(alertSpy).toHaveBeenCalledWith(
+      '¿Eliminar para todos?',
+      'Esto elimina la central de todas las cuentas.',
+      expect.arrayContaining([expect.objectContaining({ text: 'Eliminar' })]),
+    );
   });
 });

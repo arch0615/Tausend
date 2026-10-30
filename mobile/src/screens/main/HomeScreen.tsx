@@ -705,14 +705,22 @@ function ArmOption({
   label,
   onPress,
   disabled,
+  bg,
 }: {
   iconSource: number;
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  // The SMS version of this tile uses the header's dark teal rather than the IP dashboard's
+  // green (client mockup, 20 Oct) -- defaults to green so the IP dashboard is untouched.
+  bg?: string;
 }) {
   return (
-    <Pressable onPress={onPress} disabled={disabled} style={[styles.armOption, { opacity: disabled ? 0.6 : 1 }]}>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={[styles.armOption, { backgroundColor: bg ?? MAIN.statusGreen, opacity: disabled ? 0.6 : 1 }]}
+    >
       <Image source={iconSource} style={styles.armOptionIcon} resizeMode="contain" />
       <Text style={styles.armOptionLabel} numberOfLines={2}>
         {label}
@@ -764,15 +772,21 @@ function SmsHome({ navigation }: { navigation: HomeNavigation }) {
 
       {error && <Banner kind="error">{error}</Banner>}
 
-      <PrimaryButton title={t('Check status')} onPress={() => send(SmsCommands.status)} loading={sending} />
-      <View style={{ height: spacing.md }} />
-      <PrimaryButton title={t('Arm away')} onPress={() => send(SmsCommands.armAway)} loading={sending} />
-      <View style={{ height: spacing.md }} />
-      <PrimaryButton title={t('Arm day')} onPress={() => send(SmsCommands.armDay)} loading={sending} />
-      <View style={{ height: spacing.md }} />
-      <PrimaryButton title={t('Arm night')} onPress={() => send(SmsCommands.armNight)} loading={sending} />
+      {/* Client mockup, 20 Oct: this screen kept the plain stacked text buttons from before the
+          main-screen redesign -- the arm/disarm/status actions here got no icon treatment while
+          the IP dashboard and the Panico/Asalto/Emergencia row below did. The three arm modes
+          are now icon tiles in the same away/night/day order as IpHome's, Desarmar is a full-
+          width danger button, and Consultar estado uses the header's dark teal rather than the
+          IP dashboard's accent green -- all three colours sampled directly from the mockup. */}
+      <View style={styles.armOptions}>
+        <ArmOption iconSource={AWAY_ICON} label={t('Arm away mode')} onPress={() => send(SmsCommands.armAway)} disabled={sending} bg={colors.headerBg} />
+        <ArmOption iconSource={NIGHT_ICON} label={t('Arm night mode')} onPress={() => send(SmsCommands.armNight)} disabled={sending} bg={colors.headerBg} />
+        <ArmOption iconSource={DAY_ICON} label={t('Arm day mode')} onPress={() => send(SmsCommands.armDay)} disabled={sending} bg={colors.headerBg} />
+      </View>
       <View style={{ height: spacing.md }} />
       <PrimaryButton title={t('Disarm')} onPress={() => send(SmsCommands.disarm)} loading={sending} tone="danger" />
+      <View style={{ height: spacing.md }} />
+      <PrimaryButton title={t('Check status')} onPress={() => send(SmsCommands.status)} loading={sending} tone="dark" />
 
       {/* New APP Videos/'s SMS dashboard shows Pánico/Asalto Silencioso/Emergencia as the same
           icon cards as the IP dashboard (see IpHome's ActionCard usage above), not stacked text
@@ -962,7 +976,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
-    backgroundColor: MAIN.statusGreen,
     borderRadius: MAIN.actionRadius,
     shadowColor: '#000',
     shadowOpacity: 0.25,

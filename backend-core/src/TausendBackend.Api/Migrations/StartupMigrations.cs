@@ -587,6 +587,73 @@ namespace TausendBackend.Api.Migrations
                 SELECT @DeviceId
             END
             """,
+
+            // ResetDevice and AdminResetDevice back "Eliminar para todos" on Gestionar central
+            // (client, 20 Oct): a true wipe rather than the soft disable this used to be, since
+            // the client's spec calls for the panel's identifier to be deleted from the server.
+            // Devices.DeviceId is referenced by AccountDevicePins, ScheduledPgmActions, Zones,
+            // UserTags, ProgramControls and Exclusions, so every one of those needs clearing
+            // before the Devices row itself can be deleted, or this throws a foreign key
+            // violation instead of deleting anything.
+            """
+            CREATE OR ALTER PROCEDURE [dbo].[ResetDevice]
+                @Identifier NVARCHAR(20),
+                @AccountId BIGINT
+            AS BEGIN
+                DECLARE @DevicesIds AS TABLE(DeviceId INT)
+                INSERT INTO @DevicesIds(DeviceId)
+                SELECT D.DeviceId FROM Devices D
+                INNER JOIN AccountDevicePins ADP ON ADP.DeviceId = D.DeviceId
+                WHERE D.Identifier = @Identifier AND D.Enabled = 1 AND ADP.AccountId = @AccountId
+                IF((SELECT COUNT(*) FROM @DevicesIds) < 1) BEGIN
+                    SELECT -1
+                    RETURN 0
+                END
+
+                DECLARE @AccountsIds AS TABLE(AccountId INT)
+                INSERT INTO @AccountsIds(AccountId) SELECT AccountId FROM AccountDevicePins WHERE DeviceId IN (SELECT DeviceId FROM @DevicesIds)
+
+                DELETE FROM AccountDevicePins WHERE DeviceId IN (SELECT * FROM @DevicesIds)
+                DELETE FROM ScheduledPgmActions WHERE DeviceId IN (SELECT * FROM @DevicesIds)
+                DELETE FROM Zones WHERE DeviceId IN (SELECT * FROM @DevicesIds)
+                DELETE FROM UserTags WHERE DeviceId IN (SELECT * FROM @DevicesIds)
+                DELETE FROM ProgramControls WHERE DeviceId IN (SELECT * FROM @DevicesIds)
+                DELETE FROM Exclusions WHERE DeviceId IN (SELECT * FROM @DevicesIds)
+                DELETE FROM Devices WHERE DeviceId IN (SELECT * FROM @DevicesIds)
+                DELETE FROM AccountDeviceTokens WHERE AccountId IN (SELECT * FROM @AccountsIds)
+                DELETE FROM AccessTokens WHERE AccountID IN (SELECT * FROM @AccountsIds)
+
+                SELECT 1
+            END
+            """,
+
+            """
+            CREATE OR ALTER PROCEDURE [dbo].[AdminResetDevice]
+                @DeviceId BIGINT
+            AS BEGIN
+                SET NOCOUNT ON
+
+                IF NOT EXISTS (SELECT 1 FROM Devices WHERE DeviceId = @DeviceId AND Enabled = 1) BEGIN
+                    SELECT CAST(-1 AS BIGINT)
+                    RETURN 0
+                END
+
+                DECLARE @AccountsIds AS TABLE(AccountId BIGINT)
+                INSERT INTO @AccountsIds(AccountId) SELECT AccountId FROM AccountDevicePins WHERE DeviceId = @DeviceId
+
+                DELETE FROM AccountDevicePins WHERE DeviceId = @DeviceId
+                DELETE FROM ScheduledPgmActions WHERE DeviceId = @DeviceId
+                DELETE FROM Zones WHERE DeviceId = @DeviceId
+                DELETE FROM UserTags WHERE DeviceId = @DeviceId
+                DELETE FROM ProgramControls WHERE DeviceId = @DeviceId
+                DELETE FROM Exclusions WHERE DeviceId = @DeviceId
+                DELETE FROM Devices WHERE DeviceId = @DeviceId
+                DELETE FROM AccountDeviceTokens WHERE AccountId IN (SELECT AccountId FROM @AccountsIds)
+                DELETE FROM AccessTokens WHERE AccountID IN (SELECT AccountId FROM @AccountsIds)
+
+                SELECT CAST(1 AS BIGINT)
+            END
+            """,
         };
     }
 }
