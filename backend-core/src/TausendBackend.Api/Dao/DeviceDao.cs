@@ -294,6 +294,28 @@ namespace TausendBackend.Api.Dao
             }
         }
 
+        public int ClearDeviceLogos(string identifier)
+        {
+            _db.OpenConnection();
+            try
+            {
+                var sqlcommand = _db.CreateStoredProcedureCommand("dbo.ClearDeviceLogos");
+                _db.AddStringParameter(sqlcommand, "Identifier", identifier);
+                var res = (int)sqlcommand.ExecuteScalar()!;
+                _db.CommitTransaction();
+                return res;
+            }
+            catch
+            {
+                _db.RollbackTransaction();
+                throw;
+            }
+            finally
+            {
+                _db.CloseConnection();
+            }
+        }
+
         public int SetDeviceLogos(string identifier, string logo1Base64, string logo1MimeType, string logo2Base64, string logo2MimeType)
         {
             _db.OpenConnection();

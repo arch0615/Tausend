@@ -122,6 +122,31 @@ namespace TausendBackend.Api.Controllers
         // UpdateDevice above (ValidatePinOnDevice), not an account-ownership check -- the installer
         // may be setting this up for an identifier before any account is linked to it at all. Both
         // logos are set together, matching the client's own spec of a single upload step.
+        [HttpPost("ClearDeviceLogos")]
+        public async Task<SimpleResponse> ClearDeviceLogos(ClearDeviceLogosRequest request)
+        {
+            var pinCheck = await _deviceBusiness.ValidatePinOnDevice(request.Identifier, request.Pin);
+            if (!_accountBusiness.ValidateAccessToken(request.AccessToken))
+            {
+                var res = new SimpleResponse();
+                res.InformUnauthorized();
+                return res;
+            }
+            if (pinCheck == "ok")
+            {
+                return _deviceBusiness.ClearDeviceLogos(request.Identifier);
+            }
+            if (pinCheck == "invalid")
+            {
+                var res = new SimpleResponse();
+                res.InformBusinessError("Código de usuario incorrecto", 400);
+                return res;
+            }
+            var offline = new SimpleResponse();
+            offline.InformBusinessError("Central offline o inexistente", 400);
+            return offline;
+        }
+
         [HttpPost("SetDeviceLogos")]
         public async Task<SimpleResponse> SetDeviceLogos(SetDeviceLogosRequest request)
         {

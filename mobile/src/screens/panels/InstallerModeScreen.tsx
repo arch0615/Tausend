@@ -208,6 +208,13 @@ export function InstallerModeScreen() {
             <PrimaryButton title={t('Back')} onPress={() => navigation.goBack()} tone="outline" />
           </View>
         </View>
+
+        {/* The only way into the logo screen: "images can only be changed via the installer
+            screen" (client, 30 Oct), so it sits behind this screen's installer-code gate rather
+            than in the main menu where any customer could reach it. */}
+        <View style={{ marginTop: spacing.md }}>
+          <PrimaryButton title={t('Upload your logo')} onPress={() => navigation.navigate('SetPanelLogo' as never)} tone="dark" />
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
     </GradientBackground>

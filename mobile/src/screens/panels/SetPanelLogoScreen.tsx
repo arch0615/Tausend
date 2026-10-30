@@ -5,7 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { GradientBackground } from '../../components/GradientBackground';
 import { useLocale } from '../../i18n/LocaleContext';
-import { setDeviceLogos, type LogoUpload } from '../../api/device';
+import { useAuth } from '../../auth/AuthContext';
+import { clearDeviceLogos, setDeviceLogos, type LogoUpload } from '../../api/device';
 import { ResponseState } from '../../api/types';
 import { FormField } from '../../components/FormField';
 import { PrimaryButton } from '../../components/PrimaryButton';
@@ -13,24 +14,24 @@ import { Banner } from '../../components/Banner';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { logoDataUri } from '../../branding/logoUri';
 
-// Client, 26/27 Oct: an installer-facing screen, reachable from the main menu near Installer mode,
-// that sets the white-label logos for a panel by its identifier. Gated by the exact same live
-// identifier+pin credential CreateDeviceScreen uses to pair a panel (DeviceBusiness.
-// ValidatePinOnDevice) -- not an account-ownership check, since this can be done before any
-// account is linked to the panel at all. Two logos, set together in one call per the client's own
-// spec: Logo1 (portrait) replaces the eagle on the login screen, Logo2 (landscape) replaces the
-// "ALARMAS TAUSEND" banner at the top of the home screen. Once set, every account with that panel
-// linked sees them instead of the default Tausend look.
+// Client, 26/27 Oct: sets the white-label logos for a panel by its identifier. Reached from
+// Installer mode, which is itself behind the panel's installer code: "images can only be changed
+// via the installer screen" (client, 30 Oct). Gated again here by the same live identifier+pin
+// credential CreateDeviceScreen uses to pair a panel (DeviceBusiness.ValidatePinOnDevice) -- not
+// an account-ownership check, since this can be done before any account is linked to the panel.
+// Logo1 (portrait) is the splash screen; Logo2 (landscape) is the banner on that panel's own home
+// screen. Either can be set on its own, and both can be dropped again with the reset button.
 export function SetPanelLogoScreen() {
   const { colors, typography, spacing } = useTheme();
   const { t } = useLocale();
+  const { refreshSession } = useAuth();
   const navigation = useNavigation();
   const [identifier, setIdentifier] = useState('');
   const [pin, setPin] = useState('');
   const [logo1, setLogo1] = useState<LogoUpload | null>(null);
   const [logo2, setLogo2] = useState<LogoUpload | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Kept small on purpose: these images ride along in every login response for every account that
@@ -56,40 +57,66 @@ export function SetPanelLogoScreen() {
     onPicked({ base64: asset.base64, mimeType: asset.type || 'image/jpeg' });
   }
 
-  function validate(): string | null {
+  function validateCredentials(): string | null {
     if (!identifier.trim()) return t("Enter the panel's identifier.");
     if (!/^\d{4}$/.test(pin)) return t('The PIN must be 4 digits.');
-    if (!logo1 || !logo2) return t('Choose both logos first.');
     return null;
   }
 
-  async function handleSubmit() {
-    const validationError = validate();
+  function reset() {
+    setIdentifier('');
+    setPin('');
+    setLogo1(null);
+    setLogo2(null);
+  }
+
+  // Both actions do the same thing around their one differing call: validate, run it, and pull the
+  // account down again. That refresh is what makes the change visible now rather than at the next
+  // login -- the logos travel inside the account payload, so without it the installer uploads an
+  // image and nothing on screen changes ("the logos do not change" -- client, 30 Oct).
+  async function run(action: () => Promise<{ State: ResponseState; Message?: string }>, okMessage: string, failMessage: string) {
+    const validationError = validateCredentials();
     if (validationError) {
       setError(validationError);
       return;
     }
     setError(null);
-    setSuccess(false);
+    setNotice(null);
     setSubmitting(true);
     try {
-      // Live-validates against the panel through the relay, same as pairing -- can take several
-      // seconds and can fail with "offline" as well as "wrong PIN".
-      const res = await setDeviceLogos(identifier.trim(), pin, logo1!, logo2!);
+      const res = await action();
       if (res.State === ResponseState.OK) {
-        setSuccess(true);
-        setIdentifier('');
-        setPin('');
-        setLogo1(null);
-        setLogo2(null);
+        await refreshSession();
+        setNotice(okMessage);
+        reset();
         return;
       }
-      setError(res.Message || t('Could not set the logos.'));
+      setError(res.Message || failMessage);
     } catch {
       setError(t('Could not reach the server.'));
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleSubmit() {
+    if (!logo1 && !logo2) {
+      setError(t('Choose at least one logo first.'));
+      return;
+    }
+    await run(
+      () => setDeviceLogos(identifier.trim(), pin, logo1, logo2),
+      t('Logos saved.'),
+      t('Could not set the logos.'),
+    );
+  }
+
+  async function handleReset() {
+    await run(
+      () => clearDeviceLogos(identifier.trim(), pin),
+      t('Default images restored.'),
+      t('Could not restore the default images.'),
+    );
   }
 
   return (
@@ -101,11 +128,11 @@ export function SetPanelLogoScreen() {
               {t('Set custom logo')}
             </Text>
             <Text style={[typography.bodyDim, { color: colors.onDarkDim, marginBottom: spacing.lg }]}>
-              {t("Enter the panel's identifier and its 4-digit user PIN, then choose the two logos to show instead of the default Tausend look.")}
+              {t("Enter the panel's identifier and its 4-digit user PIN, then choose the logos to show instead of the default Tausend look. You can change one or both.")}
             </Text>
 
             {error && <Banner kind="error">{error}</Banner>}
-            {success && <Banner kind="ok">{t('Logos saved. They will show the next time each linked account logs in.')}</Banner>}
+            {notice && <Banner kind="ok">{notice}</Banner>}
 
             <FormField
               labelColor={colors.onDarkDim}
@@ -126,7 +153,7 @@ export function SetPanelLogoScreen() {
             />
 
             <Text style={[typography.label, { color: colors.onDarkDim, marginTop: spacing.lg, marginBottom: spacing.xs }]}>
-              {t('Logo 1 (portrait, login screen)')}
+              {t('Logo 1 (portrait, splash screen)')}
             </Text>
             <PrimaryButton title={t('Choose image')} onPress={() => pickImage(setLogo1)} tone="outline" disabled={submitting} />
             {logo1 && (
@@ -147,6 +174,9 @@ export function SetPanelLogoScreen() {
 
             <View style={{ marginTop: spacing.lg }}>
               <PrimaryButton title={t('Save logos')} onPress={handleSubmit} loading={submitting} disabled={submitting} tone="dark" />
+            </View>
+            <View style={{ marginTop: spacing.sm }}>
+              <PrimaryButton title={t('Reset to default images')} onPress={handleReset} disabled={submitting} tone="outline" />
             </View>
             <View style={{ marginTop: spacing.sm }}>
               <PrimaryButton title={t('Back')} onPress={() => navigation.goBack()} tone="outline" disabled={submitting} />

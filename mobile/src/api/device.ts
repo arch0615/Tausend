@@ -11,14 +11,29 @@ export interface LogoUpload {
   mimeType: string;
 }
 
-export function setDeviceLogos(identifier: string, pin: string, logo1: LogoUpload, logo2: LogoUpload): Promise<BaseResponse> {
+// Either logo may be null: an empty slot means "leave whatever is stored alone", not "clear it"
+// ("it is not mandatory to change both" -- client, 30 Oct). Clearing is clearDeviceLogos below.
+export function setDeviceLogos(
+  identifier: string,
+  pin: string,
+  logo1: LogoUpload | null,
+  logo2: LogoUpload | null,
+): Promise<BaseResponse> {
   return apiPost<BaseResponse>('DeviceService/SetDeviceLogos', {
     Identifier: identifier,
     Pin: pin,
-    Logo1Base64: logo1.base64,
-    Logo1MimeType: logo1.mimeType,
-    Logo2Base64: logo2.base64,
-    Logo2MimeType: logo2.mimeType,
+    Logo1Base64: logo1?.base64 ?? '',
+    Logo1MimeType: logo1?.mimeType ?? '',
+    Logo2Base64: logo2?.base64 ?? '',
+    Logo2MimeType: logo2?.mimeType ?? '',
+  });
+}
+
+/** Drops both stored logos for a panel, putting it back to the bundled default look. */
+export function clearDeviceLogos(identifier: string, pin: string): Promise<BaseResponse> {
+  return apiPost<BaseResponse>('DeviceService/ClearDeviceLogos', {
+    Identifier: identifier,
+    Pin: pin,
   });
 }
 

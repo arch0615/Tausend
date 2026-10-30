@@ -261,18 +261,22 @@ export const es: Record<string, string> = {
   'User code (4 digits)': 'Código de Usuario',
   'Panel description': 'Descripción',
 
+  'Upload your logo': 'Subir tu logo',
+
   // SetPanelLogoScreen.tsx
   'Set custom logo': 'Logo personalizado',
-  "Enter the panel's identifier and its 4-digit user PIN, then choose the two logos to show instead of the default Tausend look.":
-    'Ingresa el identificador de la central y su código de usuario de 4 dígitos, luego elige los dos logos que se mostrarán en lugar del diseño predeterminado de Tausend.',
-  'Logo 1 (portrait, login screen)': 'Logo 1 (vertical, pantalla de inicio de sesión)',
+  "Enter the panel's identifier and its 4-digit user PIN, then choose the logos to show instead of the default Tausend look. You can change one or both.":
+    'Ingresa el identificador de la central y su código de usuario de 4 dígitos, luego elige los logos que se mostrarán en lugar del diseño predeterminado de Tausend. Puedes cambiar uno o ambos.',
+  'Logo 1 (portrait, splash screen)': 'Logo 1 (vertical, pantalla de inicio)',
   'Logo 2 (landscape, home screen banner)': 'Logo 2 (horizontal, banner de la pantalla principal)',
   'Choose image': 'Elegir imagen',
   'Save logos': 'Guardar logos',
-  'Logos saved. They will show the next time each linked account logs in.':
-    'Logos guardados. Se mostrarán la próxima vez que cada cuenta vinculada inicie sesión.',
+  'Logos saved.': 'Logos guardados.',
+  'Reset to default images': 'Restablecer imágenes por defecto',
+  'Default images restored.': 'Imágenes por defecto restablecidas.',
+  'Could not restore the default images.': 'No se pudieron restablecer las imágenes por defecto.',
   'Could not read that image.': 'No se pudo leer esa imagen.',
-  'Choose both logos first.': 'Elige ambos logos primero.',
+  'Choose at least one logo first.': 'Elige al menos un logo primero.',
   'Could not set the logos.': 'No se pudieron guardar los logos.',
 
   // SmsPairingScreen.tsx

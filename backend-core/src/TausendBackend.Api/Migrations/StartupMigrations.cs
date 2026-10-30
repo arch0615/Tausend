@@ -705,8 +705,30 @@ namespace TausendBackend.Api.Migrations
                     RETURN 0
                 END
                 UPDATE Devices SET
-                    Logo1Base64 = @Logo1Base64, Logo1MimeType = @Logo1MimeType,
-                    Logo2Base64 = @Logo2Base64, Logo2MimeType = @Logo2MimeType,
+                    Logo1Base64 = CASE WHEN ISNULL(@Logo1Base64, '') = '' THEN Logo1Base64 ELSE @Logo1Base64 END,
+                    Logo1MimeType = CASE WHEN ISNULL(@Logo1Base64, '') = '' THEN Logo1MimeType ELSE @Logo1MimeType END,
+                    Logo2Base64 = CASE WHEN ISNULL(@Logo2Base64, '') = '' THEN Logo2Base64 ELSE @Logo2Base64 END,
+                    Logo2MimeType = CASE WHEN ISNULL(@Logo2Base64, '') = '' THEN Logo2MimeType ELSE @Logo2MimeType END,
+                    UpdatedDateTime = GETDATE()
+                WHERE Identifier = @Identifier AND Enabled = 1
+                SELECT 1
+            END
+            """,
+
+            // Client, 30 Oct: "it must also be possible to restore the default images using a
+            // reset to default image button". Nulling both slots restores the bundled look,
+            // since every screen already falls back to it when the panel has no logo.
+            """
+            CREATE OR ALTER PROCEDURE [dbo].[ClearDeviceLogos]
+                @Identifier NVARCHAR(20)
+            AS BEGIN
+                IF NOT EXISTS (SELECT 1 FROM Devices WHERE Identifier = @Identifier AND Enabled = 1) BEGIN
+                    SELECT -1
+                    RETURN 0
+                END
+                UPDATE Devices SET
+                    Logo1Base64 = NULL, Logo1MimeType = NULL,
+                    Logo2Base64 = NULL, Logo2MimeType = NULL,
                     UpdatedDateTime = GETDATE()
                 WHERE Identifier = @Identifier AND Enabled = 1
                 SELECT 1
