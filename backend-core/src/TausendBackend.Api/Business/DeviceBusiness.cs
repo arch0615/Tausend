@@ -250,6 +250,30 @@ namespace TausendBackend.Api.Business
             return response;
         }
 
+        /// <summary>Caller must have already passed ValidatePinOnDevice for this identifier+pin --
+        /// this only writes the logo, it does not re-check the credential.</summary>
+        public SimpleResponse SetDeviceLogos(string identifier, string logo1Base64, string logo1MimeType, string logo2Base64, string logo2MimeType)
+        {
+            var response = new SimpleResponse();
+            try
+            {
+                var res = _dao.SetDeviceLogos(identifier, logo1Base64, logo1MimeType, logo2Base64, logo2MimeType);
+                if (res == 1)
+                {
+                    response.InformOk();
+                }
+                else
+                {
+                    response.InformBusinessError("No se ha encontrado la central indicada", 400);
+                }
+            }
+            catch (Exception e)
+            {
+                response.InformServerError(e);
+            }
+            return response;
+        }
+
         public CreatedDeviceResponse CreateDeviceSMS(string accessToken, string identifier, string description, string devicePin, string simPin, string phoneNumber, string deviceType)
         {
             var response = new CreatedDeviceResponse();

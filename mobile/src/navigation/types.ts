@@ -34,6 +34,7 @@ export type MainStackParamList = {
   SmsPasswordChange: undefined;
   Clock: undefined;
   InstallerMode: undefined;
+  SetPanelLogo: undefined;
   Language: undefined;
   UserAccount: undefined;
 };

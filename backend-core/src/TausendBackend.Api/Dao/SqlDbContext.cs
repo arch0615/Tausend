@@ -80,6 +80,11 @@ namespace TausendBackend.Api.Dao
             command.Parameters.AddWithValue(paramName, paramValue);
         }
 
+        public void AddBoolParameter(SqlCommand command, string paramName, bool paramValue)
+        {
+            command.Parameters.AddWithValue(paramName, paramValue);
+        }
+
         /// <summary>
         /// Adds a table-valued parameter (SqlDbType.Structured) to a command. Callers build the
         /// DataTable themselves -- shape (columns/order) has to match the target user-defined

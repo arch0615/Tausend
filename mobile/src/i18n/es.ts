@@ -261,6 +261,20 @@ export const es: Record<string, string> = {
   'User code (4 digits)': 'Código de Usuario',
   'Panel description': 'Descripción',
 
+  // SetPanelLogoScreen.tsx
+  'Set custom logo': 'Logo personalizado',
+  "Enter the panel's identifier and its 4-digit user PIN, then choose the two logos to show instead of the default Tausend look.":
+    'Ingresa el identificador de la central y su código de usuario de 4 dígitos, luego elige los dos logos que se mostrarán en lugar del diseño predeterminado de Tausend.',
+  'Logo 1 (portrait, login screen)': 'Logo 1 (vertical, pantalla de inicio de sesión)',
+  'Logo 2 (landscape, home screen banner)': 'Logo 2 (horizontal, banner de la pantalla principal)',
+  'Choose image': 'Elegir imagen',
+  'Save logos': 'Guardar logos',
+  'Logos saved. They will show the next time each linked account logs in.':
+    'Logos guardados. Se mostrarán la próxima vez que cada cuenta vinculada inicie sesión.',
+  'Could not read that image.': 'No se pudo leer esa imagen.',
+  'Choose both logos first.': 'Elige ambos logos primero.',
+  'Could not set the logos.': 'No se pudieron guardar los logos.',
+
   // SmsPairingScreen.tsx
   'Add an SMS panel': 'Agregar una central SMS',
   'Enter the phone number of the SIM card installed in the panel, and its SMS PIN (set by the installer).':
@@ -449,6 +463,12 @@ export const es: Record<string, string> = {
   'Unlink this panel': 'Desvincular esta central',
   Unlink: 'Desvincular',
   'Could not unlink this panel.': 'No se pudo desvincular esta central.',
+
+  // ManagePanelScreen.tsx, "Apagar notificaciones" (client, 27 Oct). Spanish strings match the
+  // client's own mockup wording exactly.
+  'Turn notifications off': 'Apagar notificaciones',
+  'Turn notifications on': 'Encender notificaciones',
+  'This action only turns off notifications on this device.': 'Ésta acción solo apaga las notificaciones en éste dispositivo',
   // Client mockup, 20 Oct: "BLOQUEAR CENTRAL: Change to DESVINCULAR PARA TODOS" /
   // "REESTABLECER CENTRAL: Change to ELIMINAR PARA TODOS". The first is a title and button rename
   // only -- their own mockup is a screenshot of the dialog below with the body text untouched.

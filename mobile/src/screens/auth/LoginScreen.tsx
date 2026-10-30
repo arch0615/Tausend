@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import { FormField } from '../../components/FormField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Banner } from '../../components/Banner';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
+import { getCachedBrandLogo1 } from '../../branding/brandCache';
 import type { AuthStackParamList } from '../../navigation/types';
 
 // New APP Videos/'s login screen (the client's own reference for this app's design -- see
@@ -32,6 +33,22 @@ export function LoginScreen({ route, navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [notice] = useState(route.params?.notice ?? null);
   const [submitting, setSubmitting] = useState(false);
+  // White-label branding (client, 26 Oct): this screen renders before any account is known, so it
+  // can only show the brand remembered from the last successful login on this device -- see
+  // branding/brandCache.ts. Undefined until the read completes, which briefly shows the default
+  // Tausend mark even on a branded device; null/absent cache falls back to it permanently. Already
+  // a ready-to-render data URI (mime type baked in), not raw base64 -- see logoUri.ts.
+  const [brandLogo, setBrandLogo] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getCachedBrandLogo1().then((logo) => {
+      if (!cancelled) setBrandLogo(logo);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Safety net. `submitting` drives a full-screen Modal (LoadingOverlay), so if it is ever left
   // true with nothing in flight, that modal sits invisibly over the screen and swallows every
@@ -96,11 +113,19 @@ export function LoginScreen({ route, navigation }: Props) {
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.logoWrap}>
-          <Image source={EAGLE_LOGO} style={styles.logo} resizeMode="contain" />
+          <Image
+            source={brandLogo ? { uri: brandLogo } : EAGLE_LOGO}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
         <Card style={styles.card}>
-          <Text style={[styles.wordmark, { color: colors.brandBlue }]}>{t('ALARMAS')}</Text>
-          <Text style={[styles.wordmark, styles.wordmarkSecondLine, { color: colors.brandRed }]}>{t('TAUSEND')}</Text>
+          {!brandLogo && (
+            <>
+              <Text style={[styles.wordmark, { color: colors.brandBlue }]}>{t('ALARMAS')}</Text>
+              <Text style={[styles.wordmark, styles.wordmarkSecondLine, { color: colors.brandRed }]}>{t('TAUSEND')}</Text>
+            </>
+          )}
 
           {notice && <Banner kind="ok">{notice}</Banner>}
           {error && <Banner kind="error">{error}</Banner>}

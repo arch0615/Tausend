@@ -28,6 +28,7 @@ import { ContactPhoneScreen } from '../screens/panels/ContactPhoneScreen';
 import { SmsPasswordChangeScreen } from '../screens/panels/SmsPasswordChangeScreen';
 import { ClockScreen } from '../screens/panels/ClockScreen';
 import { InstallerModeScreen } from '../screens/panels/InstallerModeScreen';
+import { SetPanelLogoScreen } from '../screens/panels/SetPanelLogoScreen';
 import { LanguageScreen } from '../screens/main/LanguageScreen';
 import { UserAccountScreen } from '../screens/main/UserAccountScreen';
 import type { MainStackParamList } from './types';
@@ -109,6 +110,7 @@ export function MainStack() {
       />
       <Stack.Screen name="Clock" component={ClockScreen} options={{ title: t('PUESTA EN HORA') }} />
       <Stack.Screen name="InstallerMode" component={InstallerModeScreen} options={{ title: t('INSTALADOR') }} />
+      <Stack.Screen name="SetPanelLogo" component={SetPanelLogoScreen} options={{ title: t('Set custom logo') }} />
       <Stack.Screen name="Language" component={LanguageScreen} options={{ title: t('Language') }} />
       <Stack.Screen name="UserAccount" component={UserAccountScreen} options={{ title: t('User account') }} />
     </Stack.Navigator>

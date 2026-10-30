@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -10,6 +10,8 @@ import { useLocale } from '../../i18n/LocaleContext';
 import { useAuth } from '../../auth/AuthContext';
 import { usePanels } from '../../panels/PanelContext';
 import { blockPin, deleteDeviceSms, disassociateCentral, updateDevice, updateDeviceSms } from '../../api/device';
+import { getNotificationMute, setNotificationMute } from '../../api/notifications';
+import { getCurrentDeviceToken } from '../../notifications/messaging';
 import { ResponseState } from '../../api/types';
 import { describeCommandException, describeCommandFailure } from '../../panels/commandFeedback';
 import { PrimaryButton } from '../../components/PrimaryButton';
@@ -49,6 +51,37 @@ export function ManagePanelScreen({ route, navigation }: Props) {
   const [identifier, setIdentifier] = useState(savedIdentifier);
   const [pin, setPin] = useState(savedPin);
   const [updating, setUpdating] = useState(false);
+
+  // Client, 27 Oct: "Apagar notificaciones" -- muted/mutePending track this screen's view of the
+  // backend-enforced mute (see api/notifications.ts), keyed on this phone's own FCM token so the
+  // toggle reflects THIS device's state, not some other phone sharing the same panel.
+  const [muted, setMuted] = useState(false);
+  const [muteLoading, setMuteLoading] = useState(true);
+  const [mutePending, setMutePending] = useState(false);
+
+  useEffect(() => {
+    if (!panel) return;
+    let cancelled = false;
+    (async () => {
+      const token = await getCurrentDeviceToken();
+      if (cancelled || !token) {
+        if (!cancelled) setMuteLoading(false);
+        return;
+      }
+      try {
+        const res = await getNotificationMute(panel.identifier, token);
+        if (!cancelled && res.State === ResponseState.OK) setMuted(res.Muted);
+      } finally {
+        if (!cancelled) setMuteLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Only panel.identifier is actually read above -- re-running this whenever some other field
+    // on the same panel object changed would just repeat the identical lookup.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panel?.identifier]);
 
   if (!panel) {
     return (
@@ -96,6 +129,42 @@ export function ManagePanelScreen({ route, navigation }: Props) {
       setError(describeCommandException(e, t));
     } finally {
       setUpdating(false);
+    }
+  }
+
+  // Client, 27 Oct: muting shows a confirmation first (it is easy to forget this is per-phone,
+  // not per-account, and think notifications are off for everyone) -- un-muting does not, since
+  // turning notifications back on is the safe/reversible direction.
+  function confirmMute() {
+    Alert.alert(t('Attention'), t('This action only turns off notifications on this device.'), [
+      { text: t('OK'), onPress: () => applyMute(true) },
+    ]);
+  }
+
+  async function applyMute(nextMuted: boolean) {
+    if (!panel) return;
+    setError(null);
+    setMutePending(true);
+    try {
+      const token = await getCurrentDeviceToken();
+      if (!token) {
+        setError(t('Could not reach the server.'));
+        return;
+      }
+      const res = await setNotificationMute(panel.identifier, token, nextMuted);
+      if (res.State === ResponseState.UNAUTHORIZED) {
+        logout();
+        return;
+      }
+      if (res.State !== ResponseState.OK) {
+        setError(res.Message || t('Could not complete this action.'));
+        return;
+      }
+      setMuted(nextMuted);
+    } catch {
+      setError(t('Could not reach the server.'));
+    } finally {
+      setMutePending(false);
     }
   }
 
@@ -216,6 +285,15 @@ export function ManagePanelScreen({ route, navigation }: Props) {
       </Card>
 
       <View style={{ marginTop: spacing.lg }}>
+        <PrimaryButton
+          title={muted ? t('Turn notifications on') : t('Turn notifications off')}
+          onPress={() => (muted ? applyMute(false) : confirmMute())}
+          loading={muteLoading || mutePending}
+          tone={muted ? 'danger' : 'accent'}
+        />
+      </View>
+
+      <View style={{ marginTop: spacing.sm }}>
         <PrimaryButton title={t('Unlink this panel')} onPress={confirmUnlink} loading={working} />
       </View>
       <View style={styles.bottomRow}>

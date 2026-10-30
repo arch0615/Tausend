@@ -54,7 +54,8 @@ namespace TausendBackend.Api.Migrations
                 SELECT AT.AccountID, Email, FirstName, LastName, CAST(@AccessToken AS CHAR(36)), D.Description, D.Identifier, ADP.PIN, D.DeviceId, A.Role,
                        CASE WHEN D.IsOnline = 1 AND D.LastConnection IS NOT NULL
                                  AND D.LastConnection > DATEADD(HOUR, -1, GETUTCDATE())
-                            THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END
+                            THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END,
+                       D.Logo1Base64, D.Logo1MimeType, D.Logo2Base64, D.Logo2MimeType
                 FROM Accounts A
                 LEFT JOIN AccessTokens AT ON AT.AccountID = A.AccountId
                 LEFT JOIN AccountDevicePins ADP ON ADP.AccountId = AT.AccountID
@@ -119,7 +120,8 @@ namespace TausendBackend.Api.Migrations
                 SELECT @AccountID, @Email, FirstName, LastName, CAST(@AccessToken AS CHAR(36)), D.Description, D.Identifier, ADP.PIN, D.DeviceId, A.Role,
                        CASE WHEN D.IsOnline = 1 AND D.LastConnection IS NOT NULL
                                  AND D.LastConnection > DATEADD(HOUR, -1, GETUTCDATE())
-                            THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END
+                            THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END,
+                       D.Logo1Base64, D.Logo1MimeType, D.Logo2Base64, D.Logo2MimeType
                 FROM Accounts A
                 LEFT JOIN AccountDevicePins ADP ON ADP.AccountId = @AccountId
                 LEFT JOIN Devices D ON D.DeviceId = ADP.DeviceId AND D.Enabled = 1
@@ -652,6 +654,103 @@ namespace TausendBackend.Api.Migrations
                 DELETE FROM AccessTokens WHERE AccountID IN (SELECT AccountId FROM @AccountsIds)
 
                 SELECT CAST(1 AS BIGINT)
+            END
+            """,
+
+            // White-label branding (client, 26/27 Oct): two uploaded jpgs, base64-encoded, replacing
+            // the default Tausend eagle/wordmark for every account this panel is linked to. Logo1 is
+            // portrait (login screen), Logo2 is landscape (the home screen's top banner). Guarded
+            // like the quarantine-account seed above, since ALTER TABLE has no CREATE OR ALTER
+            // equivalent and this still has to be a harmless no-op on every restart.
+            """
+            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = N'Logo1Base64' AND Object_ID = Object_ID(N'Devices'))
+            BEGIN
+                ALTER TABLE Devices ADD Logo1Base64 NVARCHAR(MAX) NULL
+            END
+            """,
+            """
+            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = N'Logo2Base64' AND Object_ID = Object_ID(N'Devices'))
+            BEGIN
+                ALTER TABLE Devices ADD Logo2Base64 NVARCHAR(MAX) NULL
+            END
+            """,
+
+            // Client, 28 Oct: "it should admit both with and without background so it should be
+            // JPG or PNG" -- the picker's own detected MIME type, not assumed. JPG has no
+            // transparency, so a backgroundless logo must actually be stored/served as PNG or the
+            // transparent area renders as a solid color instead of "the app background screen"
+            // showing through, which is what the client asked for.
+            """
+            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = N'Logo1MimeType' AND Object_ID = Object_ID(N'Devices'))
+            BEGIN
+                ALTER TABLE Devices ADD Logo1MimeType NVARCHAR(20) NULL
+            END
+            """,
+            """
+            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE Name = N'Logo2MimeType' AND Object_ID = Object_ID(N'Devices'))
+            BEGIN
+                ALTER TABLE Devices ADD Logo2MimeType NVARCHAR(20) NULL
+            END
+            """,
+            """
+            CREATE OR ALTER PROCEDURE [dbo].[SetDeviceLogos]
+                @Identifier NVARCHAR(20),
+                @Logo1Base64 NVARCHAR(MAX),
+                @Logo1MimeType NVARCHAR(20),
+                @Logo2Base64 NVARCHAR(MAX),
+                @Logo2MimeType NVARCHAR(20)
+            AS BEGIN
+                IF NOT EXISTS (SELECT 1 FROM Devices WHERE Identifier = @Identifier AND Enabled = 1) BEGIN
+                    SELECT -1
+                    RETURN 0
+                END
+                UPDATE Devices SET
+                    Logo1Base64 = @Logo1Base64, Logo1MimeType = @Logo1MimeType,
+                    Logo2Base64 = @Logo2Base64, Logo2MimeType = @Logo2MimeType,
+                    UpdatedDateTime = GETDATE()
+                WHERE Identifier = @Identifier AND Enabled = 1
+                SELECT 1
+            END
+            """,
+
+            // Client, 27 Oct: "Apagar notificaciones" on Gestionar central -- mutes one phone's
+            // push for one panel without touching any other phone/account sharing it. A row's mere
+            // existence means muted; see MutedPanelNotifications.sql for why there is no DB-level
+            // uniqueness constraint on (DeviceToken, Identifier).
+            """
+            IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE Name = N'MutedPanelNotifications')
+            BEGIN
+                CREATE TABLE [dbo].[MutedPanelNotifications]
+                (
+                    [MutedPanelNotificationId] BIGINT NOT NULL PRIMARY KEY IDENTITY(1,1),
+                    DeviceToken NVARCHAR(500) NOT NULL,
+                    [Identifier] NVARCHAR(20) NOT NULL
+                )
+            END
+            """,
+            """
+            CREATE OR ALTER PROCEDURE [dbo].[SetNotificationMute]
+                @DeviceToken NVARCHAR(500),
+                @Identifier NVARCHAR(20),
+                @Muted BIT
+            AS BEGIN
+                IF @Muted = 1 BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM MutedPanelNotifications WHERE DeviceToken = @DeviceToken AND Identifier = @Identifier)
+                        INSERT INTO MutedPanelNotifications(DeviceToken, Identifier) VALUES (@DeviceToken, @Identifier)
+                END ELSE BEGIN
+                    DELETE FROM MutedPanelNotifications WHERE DeviceToken = @DeviceToken AND Identifier = @Identifier
+                END
+                SELECT 1
+            END
+            """,
+            """
+            CREATE OR ALTER PROCEDURE [dbo].[IsNotificationMuted]
+                @DeviceToken NVARCHAR(500),
+                @Identifier NVARCHAR(20)
+            AS BEGIN
+                SELECT CASE WHEN EXISTS (
+                    SELECT 1 FROM MutedPanelNotifications WHERE DeviceToken = @DeviceToken AND Identifier = @Identifier
+                ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END
             END
             """,
         };

@@ -150,6 +150,10 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // react-native-image-picker's own README: required for the backported AndroidX Photo Picker
+    // when minSdkVersion (24 here) is below 30 and this isn't already pulled in transitively.
+    implementation("androidx.activity:activity:1.9.+")
 }
 
 // Must be applied last (after com.android.application above), per Firebase's own setup docs --

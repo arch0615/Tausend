@@ -3,12 +3,24 @@ import { login as apiLogin, logout as apiLogout, refreshAccessToken } from '../a
 import { setAccessToken } from '../api/client';
 import { ResponseState, type Account } from '../api/types';
 import { clearTokens, loadTokens, saveTokens } from './tokenStorage';
+import { setCachedBrandLogo1 } from '../branding/brandCache';
+import { logoDataUri } from '../branding/logoUri';
 import {
   getCurrentDeviceToken,
   initPushNotifications,
   subscribeToForegroundMessages,
   subscribeToTokenRefresh,
 } from '../notifications/messaging';
+
+// Deliberately not PanelContext's resolveAccountBrand (same "first IP device with a logo" rule,
+// but PanelContext depends on useAuth/this module -- importing it back here would be a backwards
+// layering dependency for one shared one-liner). Only Logo1 is cached here -- see brandCache.ts.
+// Returns the ready-to-render data URI, not raw base64, so the mime type travels with it into the
+// cache rather than needing its own separate cached value.
+function resolveLogo1FromDevices(devices: Account['Devices']): string | undefined {
+  const device = devices.find((d) => d.Logo1Base64);
+  return device?.Logo1Base64 ? logoDataUri(device.Logo1Base64, device.Logo1MimeType) : undefined;
+}
 
 interface Session {
   account: Account;
@@ -58,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setAccessToken(res.Account.AccessToken);
           await saveTokens({ accessToken: res.Account.AccessToken, refreshToken: res.Account.RefreshToken });
           setSession({ account: res.Account });
+          await setCachedBrandLogo1(resolveLogo1FromDevices(res.Account.Devices));
           initPushNotifications();
         } else {
           // Refresh token is dead (expired/revoked) -- the stored session can't be
@@ -85,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAccessToken(res.Account.AccessToken);
         await saveTokens({ accessToken: res.Account.AccessToken, refreshToken: res.Account.RefreshToken });
         setSession({ account: res.Account });
+        await setCachedBrandLogo1(resolveLogo1FromDevices(res.Account.Devices));
       }
     } catch {
       // Best-effort -- leave the current session as-is if this fails.
@@ -99,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(res.Account.AccessToken);
     await saveTokens({ accessToken: res.Account.AccessToken, refreshToken: res.Account.RefreshToken });
     setSession({ account: res.Account });
+    await setCachedBrandLogo1(resolveLogo1FromDevices(res.Account.Devices));
     initPushNotifications();
     return { ok: true as const, pinChanged: res.PinChanged, removedDevices: res.Account.RemovedDevices ?? [] };
   }

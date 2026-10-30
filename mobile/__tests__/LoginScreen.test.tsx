@@ -13,7 +13,8 @@
 
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import { TextInput } from 'react-native';
+import { Image, Text, TextInput } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LoginScreen } from '../src/screens/auth/LoginScreen';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
 import { LocaleProvider } from '../src/i18n/LocaleContext';
@@ -132,5 +133,35 @@ describe('login after a failed attempt (issue #21)', () => {
 
     await type(tree, 1, 'wrongpas');
     expect(JSON.stringify(tree.toJSON())).not.toContain('Login erróneo.');
+  });
+});
+
+/**
+ * White-label branding (client, 26 Oct): this screen renders before any account is known, so it
+ * can only show the brand remembered from the last successful login on this device (see
+ * branding/brandCache.ts) -- pinned here against the real AsyncStorage mock rather than a stubbed
+ * cache module, since the read-on-mount timing is the behaviour actually worth covering.
+ */
+describe('login screen branding cache', () => {
+  beforeEach(async () => {
+    mockLogin.mockReset();
+    (globalThis as { __resetAsyncStorage?: () => void }).__resetAsyncStorage?.();
+  });
+
+  it('shows the default Tausend mark when nothing is cached', async () => {
+    const tree = await mount();
+    const logo = tree.root.findByType(Image);
+    expect(logo.props.source).not.toHaveProperty('uri');
+    expect(tree.root.findAllByType(Text).some((n) => n.props.children === 'ALARMAS')).toBe(true);
+  });
+
+  it('shows the cached brand logo instead of the eagle/wordmark once loaded', async () => {
+    // The cache holds a ready-to-render data URI (mime type already baked in by AuthContext's
+    // resolveLogo1FromDevices), not raw base64 -- see branding/logoUri.ts.
+    await AsyncStorage.setItem('tausend-cached-brand-logo1', 'data:image/png;base64,cachedBase64');
+    const tree = await mount();
+    const logo = tree.root.findByType(Image);
+    expect(logo.props.source).toEqual({ uri: 'data:image/png;base64,cachedBase64' });
+    expect(tree.root.findAllByType(Text).some((n) => n.props.children === 'ALARMAS')).toBe(false);
   });
 });

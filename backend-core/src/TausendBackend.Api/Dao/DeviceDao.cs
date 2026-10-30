@@ -294,6 +294,32 @@ namespace TausendBackend.Api.Dao
             }
         }
 
+        public int SetDeviceLogos(string identifier, string logo1Base64, string logo1MimeType, string logo2Base64, string logo2MimeType)
+        {
+            _db.OpenConnection();
+            try
+            {
+                var sqlcommand = _db.CreateStoredProcedureCommand("dbo.SetDeviceLogos");
+                _db.AddStringParameter(sqlcommand, "Identifier", identifier);
+                _db.AddStringParameter(sqlcommand, "Logo1Base64", logo1Base64);
+                _db.AddStringParameter(sqlcommand, "Logo1MimeType", logo1MimeType);
+                _db.AddStringParameter(sqlcommand, "Logo2Base64", logo2Base64);
+                _db.AddStringParameter(sqlcommand, "Logo2MimeType", logo2MimeType);
+                var res = (int)sqlcommand.ExecuteScalar()!;
+                _db.CommitTransaction();
+                return res;
+            }
+            catch
+            {
+                _db.RollbackTransaction();
+                throw;
+            }
+            finally
+            {
+                _db.CloseConnection();
+            }
+        }
+
         public long CreateDeviceSMS(string accessToken, string identifier, string description, string devicePin, string simPin, string phoneNumber, string deviceType)
         {
             _db.OpenConnection();

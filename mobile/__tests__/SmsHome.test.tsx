@@ -14,7 +14,7 @@
 
 import React from 'react';
 import ReactTestRenderer, { act } from 'react-test-renderer';
-import { Text } from 'react-native';
+import { Image, Text } from 'react-native';
 import { HomeScreen } from '../src/screens/main/HomeScreen';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
 import { LocaleProvider } from '../src/i18n/LocaleContext';
@@ -32,8 +32,10 @@ const mockOpenSmsComposer = jest.fn().mockResolvedValue(true);
 jest.mock('../src/pairing/smsIntent', () => ({
   openSmsComposer: (phone: string, body: string) => mockOpenSmsComposer(phone, body),
 }));
+let mockBrand: { logo1Uri?: string; logo2Uri?: string } | undefined;
 jest.mock('../src/panels/PanelContext', () => ({
   usePanels: () => ({ panels: [{ kind: 'sms', deviceId: 21, description: 'Sms1' }], selected: { kind: 'sms', deviceId: 21, description: 'Sms1' } }),
+  resolveAccountBrand: () => mockBrand,
 }));
 jest.mock('../src/auth/AuthContext', () => ({
   useAuth: () => ({
@@ -82,7 +84,10 @@ async function pressByLabel(tree: ReactTestRenderer.ReactTestRenderer, label: st
 }
 
 describe('SMS dashboard, arm/disarm/status section', () => {
-  beforeEach(() => mockOpenSmsComposer.mockClear());
+  beforeEach(() => {
+    mockOpenSmsComposer.mockClear();
+    mockBrand = undefined;
+  });
 
   it('shows the three arm modes as icon tiles, then Desarmar, then Consultar estado, in that order', () => {
     const labels = labelOrder(render());
@@ -122,5 +127,36 @@ describe('SMS dashboard, arm/disarm/status section', () => {
       expect(flatten(node.props.style).backgroundColor).toBe(palette.headerBg);
       expect(flatten(node.props.style).backgroundColor).not.toBe(palette.accent);
     }
+  });
+});
+
+/**
+ * White-label branding (client, 26/27 Oct): the home screen's top banner (Logo2, landscape) --
+ * the default bundled wordmark when no panel has a custom brand set, or the custom image once one
+ * does. TopBar is shared by IpHome and SmsHome; exercised here through SmsHome since its harness
+ * is already simple.
+ */
+describe('Home screen top banner (Logo2)', () => {
+  beforeEach(() => {
+    mockOpenSmsComposer.mockClear();
+    mockBrand = undefined;
+  });
+
+  it('shows the default bundled wordmark when no panel has a custom brand', () => {
+    const tree = render();
+    const images = tree.root.findAllByType(Image);
+    const banner = images[0];
+    // Asserting the exact asset, not just "not a {uri} shape" -- the panel pill's own icon right
+    // below it is also a local require() with no uri, so that alone wouldn't tell a genuinely
+    // missing banner apart from the WORDMARK_BANNER actually being there.
+    expect((banner.props.source as { testUri: string }).testUri).toMatch(/wordmark-banner\.png$/);
+    expect(images.length).toBeGreaterThan(1);
+  });
+
+  it('shows the custom Logo2 image once the account has one', () => {
+    mockBrand = { logo2Uri: 'data:image/jpeg;base64,bannerXYZ' };
+    const tree = render();
+    const banner = tree.root.findAllByType(Image)[0];
+    expect(banner.props.source).toEqual({ uri: 'data:image/jpeg;base64,bannerXYZ' });
   });
 });

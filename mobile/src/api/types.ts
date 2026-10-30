@@ -32,6 +32,17 @@ export interface AccountDevice {
   Pin: string;
   DeviceId: number;
   IsOnline: boolean;
+  // White-label branding (client, 26/27/28 Oct): two images uploaded against this panel's
+  // identifier, base64 encoded. Logo1 (portrait) replaces the eagle on the login screen, Logo2
+  // (landscape) replaces the "ALARMAS TAUSEND" banner at the top of the home screen. Absent/empty
+  // means no custom branding is set for that slot. MimeType is the picker's own detected type
+  // (image/jpeg or image/png) -- needed to build a correct data URI, since a PNG displayed as if
+  // it were a JPEG loses its transparency (client, 28 Oct: "it should admit both with and without
+  // background so it should be JPG or PNG").
+  Logo1Base64?: string;
+  Logo1MimeType?: string;
+  Logo2Base64?: string;
+  Logo2MimeType?: string;
 }
 
 // SMS-connected panel -- a distinct shape from AccountDevice (IP panels): no Mac/IsOnline (no

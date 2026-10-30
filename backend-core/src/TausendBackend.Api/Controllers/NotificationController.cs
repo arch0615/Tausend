@@ -133,6 +133,49 @@ namespace TausendBackend.Api.Controllers
             return new CommandResponse { Text = _notificationBusiness.ProcessNotificationRequest(request) };
         }
 
+        // Client, 27 Oct: "Apagar notificaciones" on Gestionar central -- the caller must own the
+        // panel (same IDOR protection as everything else keyed by Identifier), but muting is scoped
+        // to the DeviceToken the app itself sends, not the account, so this phone's mute never
+        // reaches any other phone or account sharing the panel.
+        [HttpPost("SetNotificationMute")]
+        public SimpleResponse SetNotificationMute(SetNotificationMuteRequest request)
+        {
+            var accountId = _accountBusiness.ResolveAccountId(request.AccessToken);
+            if (accountId == 0)
+            {
+                var res = new SimpleResponse();
+                res.InformUnauthorized();
+                return res;
+            }
+            if (_deviceBusiness.GetDevice(request.Identifier, accountId).Device == null)
+            {
+                var res = new SimpleResponse();
+                res.InformNotFound($"Dispositivo {request.Identifier} no encontrado");
+                return res;
+            }
+            _notificationBusiness.SetNotificationMute(request.DeviceToken, request.Identifier, request.Muted);
+            return new SimpleResponse();
+        }
+
+        [HttpPost("GetNotificationMute")]
+        public NotificationMuteResponse GetNotificationMute(GetNotificationMuteRequest request)
+        {
+            var accountId = _accountBusiness.ResolveAccountId(request.AccessToken);
+            if (accountId == 0)
+            {
+                var res = new NotificationMuteResponse();
+                res.InformUnauthorized();
+                return res;
+            }
+            if (_deviceBusiness.GetDevice(request.Identifier, accountId).Device == null)
+            {
+                var res = new NotificationMuteResponse();
+                res.InformNotFound($"Dispositivo {request.Identifier} no encontrado");
+                return res;
+            }
+            return new NotificationMuteResponse { Muted = _notificationBusiness.IsNotificationMuted(request.DeviceToken, request.Identifier) };
+        }
+
         [HttpPost("EnumEvents")]
         public ListOfEventsResponse EnumEvents(CommandRequest request)
         {
