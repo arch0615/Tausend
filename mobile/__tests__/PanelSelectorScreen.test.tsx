@@ -77,7 +77,6 @@ jest.mock('../src/panels/PanelContext', () => {
       reportReachability,
     };
   },
-  resolveAccountBrand: () => undefined,
   };
 });
 

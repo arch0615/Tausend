@@ -7,7 +7,7 @@ import { GradientBackground } from '../../components/GradientBackground';
 import { Card } from '../../components/Card';
 import { useLocale } from '../../i18n/LocaleContext';
 import { useAuth } from '../../auth/AuthContext';
-import { usePanels, resolveAccountBrand } from '../../panels/PanelContext';
+import { usePanels, resolvePanelLogo2 } from '../../panels/PanelContext';
 import {
   armAlarm,
   dayArmAlarm,
@@ -70,7 +70,7 @@ const STATE_UNKNOWN_ICON = require('../../assets/images/icon-state-unknown.png')
 // across TopBar's new banner when no custom Logo2 is set for the selected panel -- the client's own
 // asset for this slot, not a recreation with styled Text (their lettering is a custom distorted
 // font, not something a system font/fontWeight can match).
-const WORDMARK_BANNER = require('../../assets/images/wordmark-banner.png');
+const LOGO2_DEFAULT = require('../../assets/images/logo2-default.png');
 
 // home.page.scss's .fail-button and its ion-label, verbatim: the size the client asked for in
 // both rounds ("deben ser como los de la APP en uso (la anterior)").
@@ -204,7 +204,7 @@ function IpHome({
   const { colors, typography, spacing } = useTheme();
   const { t } = useLocale();
   const { logout } = useAuth();
-  const { panels, reachabilityOf, reportReachability } = usePanels();
+  const { selected, reachabilityOf, reportReachability } = usePanels();
   const [status, setStatus] = useState<ParsedStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -395,7 +395,7 @@ function IpHome({
         description={description}
         onMenu={() => setMenuOpen(true)}
         onSwitchPanel={() => navigation.navigate('PanelSelector')}
-        logo2Uri={resolveAccountBrand(panels)?.logo2Uri}
+        logo2Uri={resolvePanelLogo2(selected)}
         onRefresh={fetchStatus}
         refreshing={loading}
       />
@@ -739,7 +739,7 @@ function SmsHome({ navigation }: { navigation: HomeNavigation }) {
   const { colors, typography, spacing } = useTheme();
   const { t } = useLocale();
   const { session } = useAuth();
-  const { panels, selected } = usePanels();
+  const { selected } = usePanels();
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -769,7 +769,7 @@ function SmsHome({ navigation }: { navigation: HomeNavigation }) {
         description={smsDevice?.Description ?? t('SMS panel')}
         onMenu={() => setMenuOpen(true)}
         onSwitchPanel={() => navigation.navigate('PanelSelector')}
-        logo2Uri={resolveAccountBrand(panels)?.logo2Uri}
+        logo2Uri={resolvePanelLogo2(selected)}
       />
       <Text style={[typography.bodyDim, { color: colors.onDarkDim, marginBottom: spacing.lg }]}>
         {t(
@@ -835,16 +835,15 @@ function TopBar({
   onSwitchPanel: () => void;
   onRefresh?: () => void;
   refreshing?: boolean;
-  // White-label branding (client, 26/27 Oct): the custom landscape logo for whichever panel is
-  // this account's "effective brand" (see resolveAccountBrand) -- undefined shows WORDMARK_BANNER,
-  // the default Tausend look, rather than hiding the banner entirely.
+  // White-label branding (client, 26/27 Oct): the selected panel's own custom landscape logo
+  // (see resolvePanelLogo2) -- undefined shows the bundled default rather than hiding the banner.
   logo2Uri?: string;
 }) {
   const { colors, spacing } = useTheme();
   return (
     <>
     <Image
-      source={logo2Uri ? { uri: logo2Uri } : WORDMARK_BANNER}
+      source={logo2Uri ? { uri: logo2Uri } : LOGO2_DEFAULT}
       style={[styles.brandBanner, { marginBottom: spacing.sm }]}
       resizeMode="contain"
     />

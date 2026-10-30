@@ -23,37 +23,36 @@ export interface Panel {
   // changes until the next login. Use `reachabilityOf` below for what is actually true now.
   isOnline?: boolean;
   // IP panels only -- white-label branding (client, 26/27 Oct) is set against a Devices row by
-  // identifier, which SMS panels don't have an equivalent of. Logo1 (portrait) replaces the eagle
-  // on the login screen; Logo2 (landscape) replaces the "ALARMAS TAUSEND" banner at the top of the
-  // home screen. Absent/empty means no custom branding is set for that slot.
+  // identifier, which SMS panels don't have an equivalent of. Logo1 (portrait) shows on the splash
+  // and login screens; Logo2 (landscape) replaces the "ALARMAS TAUSEND" banner at the top of that
+  // panel's own home screen. Absent/empty means no custom branding is set for that slot.
   logo1Base64?: string;
   logo1MimeType?: string;
   logo2Base64?: string;
   logo2MimeType?: string;
 }
 
-export interface AccountBrand {
-  // Pre-built data: URIs (see branding/logoUri.ts), not raw base64 -- every consumer just needs
-  // <Image source={{uri}}>, none of them should have to know about MimeType at all.
-  logo1Uri?: string;
-  logo2Uri?: string;
+/**
+ * Logo1, for the screens that render before any panel is chosen (the splash screen, the login
+ * screen). Those cannot be panel-specific, so the first IP panel carrying a Logo1 wins; an
+ * account normally belongs to a single reseller, so its panels sharing one brand is the expected
+ * case. Undefined means show the bundled default.
+ */
+export function resolveAccountLogo1(panels: Panel[]): string | undefined {
+  const branded = panels.find((p) => p.kind === 'ip' && p.logo1Base64);
+  return branded?.logo1Base64 ? logoDataUri(branded.logo1Base64, branded.logo1MimeType) : undefined;
 }
 
 /**
- * The account's "effective brand" for screens that show a logo regardless of which panel is
- * selected (the login screen, the home screen's top banner) -- the first IP panel with either
- * custom logo set, or undefined for the default Tausend look. Both logos come from that same
- * panel, not mixed from different ones. An account normally belongs to one reseller, so its panels
- * sharing one brand is the expected case; if they genuinely differ, whichever panel sorts first in
- * the account's own list wins, there is no defined "most important panel" otherwise.
+ * Logo2, for the home screen banner. Scoped to the one panel being viewed, never the account:
+ * "logo 2 is displayed on the main screen of the control unit to which that logo is linked"
+ * (client, 30 Oct). Resolving this account-wide is what made one panel's banner appear over every
+ * other panel on the same account, which is the bug that message was reporting. Undefined means
+ * show the bundled default.
  */
-export function resolveAccountBrand(panels: Panel[]): AccountBrand | undefined {
-  const branded = panels.find((p) => p.kind === 'ip' && (p.logo1Base64 || p.logo2Base64));
-  if (!branded) return undefined;
-  return {
-    logo1Uri: branded.logo1Base64 ? logoDataUri(branded.logo1Base64, branded.logo1MimeType) : undefined,
-    logo2Uri: branded.logo2Base64 ? logoDataUri(branded.logo2Base64, branded.logo2MimeType) : undefined,
-  };
+export function resolvePanelLogo2(panel: Panel | null): string | undefined {
+  if (!panel || panel.kind !== 'ip' || !panel.logo2Base64) return undefined;
+  return logoDataUri(panel.logo2Base64, panel.logo2MimeType);
 }
 
 /** 'unknown' means no live command has been attempted for this panel yet this session. */

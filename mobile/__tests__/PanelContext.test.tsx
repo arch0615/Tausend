@@ -14,7 +14,7 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import { Text } from 'react-native';
-import { PanelProvider, usePanels, resolveAccountBrand, type Panel, type Reachability } from '../src/panels/PanelContext';
+import { PanelProvider, usePanels, resolveAccountLogo1, resolvePanelLogo2, type Panel, type Reachability } from '../src/panels/PanelContext';
 
 let mockEmail = 'a@example.com';
 jest.mock('../src/auth/AuthContext', () => ({
@@ -111,7 +111,7 @@ describe('live panel reachability', () => {
  * A pure function, so tested directly against hand-built panel lists rather than through the
  * provider harness above.
  */
-describe('resolveAccountBrand', () => {
+describe('brand logo resolution', () => {
   const ip = (deviceId: number, logo1Base64?: string, logo2Base64?: string, mimeType = 'image/jpeg'): Panel => ({
     kind: 'ip',
     deviceId,
@@ -124,43 +124,59 @@ describe('resolveAccountBrand', () => {
   });
   const sms = (deviceId: number): Panel => ({ kind: 'sms', deviceId, description: `Sms ${deviceId}`, identifier: `S${deviceId}` });
 
-  it('returns undefined when no panel has a custom logo', () => {
-    expect(resolveAccountBrand([ip(1), ip(2), sms(3)])).toBeUndefined();
-  });
+  describe('resolveAccountLogo1 (splash and login, before a panel is chosen)', () => {
+    it('returns undefined when no panel has a Logo1', () => {
+      expect(resolveAccountLogo1([ip(1), ip(2), sms(3)])).toBeUndefined();
+      expect(resolveAccountLogo1([])).toBeUndefined();
+    });
 
-  it('returns both logos from the first IP panel that has either set, as data URIs', () => {
-    expect(resolveAccountBrand([ip(1), ip(2, 'logo1B', 'logo2B'), ip(3, 'logo1C', 'logo2C')])).toEqual({
-      logo1Uri: 'data:image/jpeg;base64,logo1B',
-      logo2Uri: 'data:image/jpeg;base64,logo2B',
+    it('takes Logo1 from the first IP panel that has one', () => {
+      expect(resolveAccountLogo1([ip(1), ip(2, 'logo1B'), ip(3, 'logo1C')])).toBe('data:image/jpeg;base64,logo1B');
+    });
+
+    it('never picks up a logo from an SMS panel, even first in the list', () => {
+      // SMS panels have no logo fields at all -- this pins that the 'ip' filter actually runs
+      // rather than happening to pass because no SMS panel could match anyway.
+      expect(resolveAccountLogo1([sms(1), ip(2, 'logo1B')])).toBe('data:image/jpeg;base64,logo1B');
+    });
+
+    it('ignores a panel that only has Logo2 set', () => {
+      expect(resolveAccountLogo1([ip(1, undefined, 'logo2B')])).toBeUndefined();
+    });
+
+    it('bakes the real stored mime type into the URI, not a hardcoded image/jpeg', () => {
+      // Client, 28 Oct: "it should admit both with and without background so it should be JPG or
+      // PNG" -- a PNG rendered under a forced image/jpeg data URI loses its transparency.
+      expect(resolveAccountLogo1([ip(1, 'logo1B', undefined, 'image/png')])).toBe('data:image/png;base64,logo1B');
     });
   });
 
-  it('matches on either logo being set, not requiring both', () => {
-    expect(resolveAccountBrand([ip(1), ip(2, 'logo1B', undefined)])).toEqual({
-      logo1Uri: 'data:image/jpeg;base64,logo1B',
-      logo2Uri: undefined,
+  describe('resolvePanelLogo2 (home banner, scoped to the panel being viewed)', () => {
+    it("returns the selected panel's own Logo2", () => {
+      expect(resolvePanelLogo2(ip(2, undefined, 'logo2B'))).toBe('data:image/jpeg;base64,logo2B');
     });
-  });
 
-  it('never picks up a logo from an SMS panel, even first in the list', () => {
-    // SMS panels have no logo fields at all -- this just pins that the 'ip' filter actually runs
-    // rather than happening to pass because none of the test's SMS panels could match anyway.
-    expect(resolveAccountBrand([sms(1), ip(2, 'logo1B', 'logo2B')])).toEqual({
-      logo1Uri: 'data:image/jpeg;base64,logo1B',
-      logo2Uri: 'data:image/jpeg;base64,logo2B',
+    it('does not show one panel\'s Logo2 while a different panel is selected', () => {
+      // The bug the client reported on 30 Oct: "if I have multiple phone systems under the same
+      // account, the logo 2 setting changes for all of them". The old account-wide resolver
+      // scanned the whole list and returned panel 2's logo here, branding every panel at once.
+      const unbranded = ip(1);
+      const branded = ip(2, 'logo1B', 'logo2B');
+      expect(resolvePanelLogo2(unbranded)).toBeUndefined();
+      expect(resolvePanelLogo2(branded)).toBe('data:image/jpeg;base64,logo2B');
     });
-  });
 
-  it('bakes the real stored mime type into the URI, not a hardcoded image/jpeg', () => {
-    // Client, 28 Oct: "it should admit both with and without background so it should be JPG or
-    // PNG" -- a PNG rendered under a forced image/jpeg data URI loses its transparency.
-    expect(resolveAccountBrand([ip(1, 'logo1B', 'logo2B', 'image/png')])).toEqual({
-      logo1Uri: 'data:image/png;base64,logo1B',
-      logo2Uri: 'data:image/png;base64,logo2B',
+    it('returns undefined with no panel selected, or for an SMS panel', () => {
+      expect(resolvePanelLogo2(null)).toBeUndefined();
+      expect(resolvePanelLogo2(sms(1))).toBeUndefined();
     });
-  });
 
-  it('returns undefined for an empty panel list', () => {
-    expect(resolveAccountBrand([])).toBeUndefined();
+    it('ignores a panel that only has Logo1 set', () => {
+      expect(resolvePanelLogo2(ip(1, 'logo1B'))).toBeUndefined();
+    });
+
+    it('bakes the real stored mime type into the URI', () => {
+      expect(resolvePanelLogo2(ip(1, undefined, 'logo2B', 'image/png'))).toBe('data:image/png;base64,logo2B');
+    });
   });
 });

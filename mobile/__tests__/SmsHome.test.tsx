@@ -32,10 +32,10 @@ const mockOpenSmsComposer = jest.fn().mockResolvedValue(true);
 jest.mock('../src/pairing/smsIntent', () => ({
   openSmsComposer: (phone: string, body: string) => mockOpenSmsComposer(phone, body),
 }));
-let mockBrand: { logo1Uri?: string; logo2Uri?: string } | undefined;
+let mockLogo2Uri: string | undefined;
 jest.mock('../src/panels/PanelContext', () => ({
   usePanels: () => ({ panels: [{ kind: 'sms', deviceId: 21, description: 'Sms1' }], selected: { kind: 'sms', deviceId: 21, description: 'Sms1' } }),
-  resolveAccountBrand: () => mockBrand,
+  resolvePanelLogo2: () => mockLogo2Uri,
 }));
 jest.mock('../src/auth/AuthContext', () => ({
   useAuth: () => ({
@@ -86,7 +86,7 @@ async function pressByLabel(tree: ReactTestRenderer.ReactTestRenderer, label: st
 describe('SMS dashboard, arm/disarm/status section', () => {
   beforeEach(() => {
     mockOpenSmsComposer.mockClear();
-    mockBrand = undefined;
+    mockLogo2Uri = undefined;
   });
 
   it('shows the three arm modes as icon tiles, then Desarmar, then Consultar estado, in that order', () => {
@@ -139,22 +139,22 @@ describe('SMS dashboard, arm/disarm/status section', () => {
 describe('Home screen top banner (Logo2)', () => {
   beforeEach(() => {
     mockOpenSmsComposer.mockClear();
-    mockBrand = undefined;
+    mockLogo2Uri = undefined;
   });
 
-  it('shows the default bundled wordmark when no panel has a custom brand', () => {
+  it('shows the default bundled logo2 when the selected panel has no custom brand', () => {
     const tree = render();
     const images = tree.root.findAllByType(Image);
     const banner = images[0];
     // Asserting the exact asset, not just "not a {uri} shape" -- the panel pill's own icon right
     // below it is also a local require() with no uri, so that alone wouldn't tell a genuinely
-    // missing banner apart from the WORDMARK_BANNER actually being there.
-    expect((banner.props.source as { testUri: string }).testUri).toMatch(/wordmark-banner\.png$/);
+    // missing banner apart from the default logo2 actually being there.
+    expect((banner.props.source as { testUri: string }).testUri).toMatch(/logo2-default\.png$/);
     expect(images.length).toBeGreaterThan(1);
   });
 
   it('shows the custom Logo2 image once the account has one', () => {
-    mockBrand = { logo2Uri: 'data:image/jpeg;base64,bannerXYZ' };
+    mockLogo2Uri = 'data:image/jpeg;base64,bannerXYZ';
     const tree = render();
     const banner = tree.root.findAllByType(Image)[0];
     expect(banner.props.source).toEqual({ uri: 'data:image/jpeg;base64,bannerXYZ' });

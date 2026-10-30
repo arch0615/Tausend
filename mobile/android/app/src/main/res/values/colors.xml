@@ -1,0 +1,5 @@
+<resources>
+    <!-- Matches GradientBackground's top stop (theme/colors.ts gradientTop) so the window the OS
+         paints before the JS bundle loads hands over to the splash screen without a flash. -->
+    <color name="splash_background">#1d4c5f</color>
+</resources>

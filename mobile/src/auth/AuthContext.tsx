@@ -12,7 +12,7 @@ import {
   subscribeToTokenRefresh,
 } from '../notifications/messaging';
 
-// Deliberately not PanelContext's resolveAccountBrand (same "first IP device with a logo" rule,
+// Deliberately not PanelContext's resolveAccountLogo1 (same "first IP device with a logo" rule,
 // but PanelContext depends on useAuth/this module -- importing it back here would be a backwards
 // layering dependency for one shared one-liner). Only Logo1 is cached here -- see brandCache.ts.
 // Returns the ready-to-render data URI, not raw base64, so the mime type travels with it into the
