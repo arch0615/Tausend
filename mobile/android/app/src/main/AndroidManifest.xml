@@ -41,5 +41,13 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+
+      <!-- A push that lands while the app is backgrounded or killed is drawn by FCM itself, not
+           by any of our JS, so it does not go through the notifee call in messaging.ts and cannot
+           pick up that call's smallIcon. Without this it falls back to the launcher icon, which
+           the OS flattens to its alpha channel and renders as a solid white block. -->
+      <meta-data
+        android:name="com.google.firebase.messaging.default_notification_icon"
+        android:resource="@drawable/ic_notification" />
     </application>
 </manifest>
