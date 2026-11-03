@@ -14,6 +14,7 @@ import { Text, TextInput } from 'react-native';
 import { SetPanelLogoScreen } from '../src/screens/panels/SetPanelLogoScreen';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
 import { LocaleProvider } from '../src/i18n/LocaleContext';
+import { getCachedBrandLogo1, setCachedBrandLogo1 } from '../src/branding/brandCache';
 
 const mockSetDeviceLogos = jest.fn();
 const mockClearDeviceLogos = jest.fn();
@@ -35,7 +36,7 @@ jest.mock('@react-navigation/native', () => ({
 // The picker is the one piece a test cannot drive for real; each test decides what it hands back.
 const mockLaunchImageLibrary = jest.fn();
 jest.mock('react-native-image-picker', () => ({
-  launchImageLibrary: () => mockLaunchImageLibrary(),
+  launchImageLibrary: (options: unknown) => mockLaunchImageLibrary(options),
 }));
 
 const OK = { State: 0 };
@@ -97,6 +98,7 @@ describe('custom logo screen', () => {
     mockClearDeviceLogos.mockReset().mockResolvedValue(OK);
     mockRefreshSession.mockClear();
     mockLaunchImageLibrary.mockReset();
+    (globalThis as { __resetAsyncStorage?: () => void }).__resetAsyncStorage?.();
   });
 
   it('saves with only Logo 1 chosen, leaving Logo 2 untouched', async () => {
@@ -165,5 +167,99 @@ describe('custom logo screen', () => {
 
     expect(mockRefreshSession).not.toHaveBeenCalled();
     expect(screenText(tree)).toContain('Código de usuario incorrecto');
+  });
+});
+
+/**
+ * Client, 2 Nov: "logo 1 shouldn't have black background ... even the logo 1 has no black
+ * background, it got the black background when uploaded." The black appears in the preview,
+ * before anything is uploaded, so it is introduced when the image is picked.
+ *
+ * react-native-image-picker only skips its decode-and-re-encode pass when quality is exactly 100
+ * AND no max dimension is set (Utils.shouldResizeImage); any other combination re-encodes, and
+ * that re-encode falls back to JPEG unless the mime is exactly image/png, flattening alpha onto
+ * black. So the options below are the fix, and this pins them.
+ */
+describe('logo picking preserves the original image', () => {
+  beforeEach(() => {
+    mockSetDeviceLogos.mockReset().mockResolvedValue(OK);
+    mockClearDeviceLogos.mockReset().mockResolvedValue(OK);
+    mockRefreshSession.mockClear();
+    mockLaunchImageLibrary.mockReset();
+    (globalThis as { __resetAsyncStorage?: () => void }).__resetAsyncStorage?.();
+  });
+
+  it('asks the picker for the untouched original, not a re-encoded copy', async () => {
+    const tree = await mount();
+    await pickInto(tree, 'Logo 1', 'portraitB', 'image/png');
+
+    const options = mockLaunchImageLibrary.mock.calls[0][0];
+    expect(options.quality).toBe(1);
+    expect(options.maxWidth).toBeUndefined();
+    expect(options.maxHeight).toBeUndefined();
+    expect(options.includeBase64).toBe(true);
+  });
+
+  it('keeps the real png mime type so transparency survives into the data URI', async () => {
+    const tree = await mount();
+    await fillCredentials(tree);
+    await pickInto(tree, 'Logo 1', 'portraitB', 'image/png');
+    await press(tree, 'Guardar logos');
+
+    expect(mockSetDeviceLogos).toHaveBeenCalledWith('cr832', '1234', { base64: 'portraitB', mimeType: 'image/png' }, null);
+  });
+
+  it('refuses an image too big to ride inside every login response', async () => {
+    const tree = await mount();
+    await pickInto(tree, 'Logo 1', 'x'.repeat(2_000_001), 'image/png');
+    expect(screenText(tree)).toContain('Elige una imagen de menos de 1,5 MB.');
+
+    await fillCredentials(tree);
+    await press(tree, 'Guardar logos');
+    expect(mockSetDeviceLogos).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Client, 2 Nov: "a new Logo 1 can be uploaded but it doesn't work. The app keeps the original
+ * logo." The splash reads the device's cached Logo1, which a session refresh otherwise refills
+ * from whichever panel comes first and carries one -- a stale test logo on another panel wins.
+ * Writing the just-saved logo straight into the cache is what makes what was set be what shows.
+ */
+describe('a saved Logo1 becomes the splash immediately', () => {
+  beforeEach(() => {
+    mockSetDeviceLogos.mockReset().mockResolvedValue(OK);
+    mockClearDeviceLogos.mockReset().mockResolvedValue(OK);
+    mockRefreshSession.mockClear();
+    mockLaunchImageLibrary.mockReset();
+    (globalThis as { __resetAsyncStorage?: () => void }).__resetAsyncStorage?.();
+  });
+
+  it('caches the logo1 that was just saved', async () => {
+    const tree = await mount();
+    await fillCredentials(tree);
+    await pickInto(tree, 'Logo 1', 'brandNew', 'image/png');
+    await press(tree, 'Guardar logos');
+
+    await expect(getCachedBrandLogo1()).resolves.toBe('data:image/png;base64,brandNew');
+  });
+
+  it('leaves the cache alone when only logo2 was set', async () => {
+    await setCachedBrandLogo1('data:image/png;base64,existing');
+    const tree = await mount();
+    await fillCredentials(tree);
+    await pickInto(tree, 'Logo 2', 'bannerOnly', 'image/jpeg');
+    await press(tree, 'Guardar logos');
+
+    await expect(getCachedBrandLogo1()).resolves.toBe('data:image/png;base64,existing');
+  });
+
+  it('clears the cached splash logo on reset, so the next launch is not still branded', async () => {
+    await setCachedBrandLogo1('data:image/png;base64,existing');
+    const tree = await mount();
+    await fillCredentials(tree);
+    await press(tree, 'Restablecer imágenes por defecto');
+
+    await expect(getCachedBrandLogo1()).resolves.toBeNull();
   });
 });

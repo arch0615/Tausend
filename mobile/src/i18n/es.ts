@@ -276,6 +276,7 @@ export const es: Record<string, string> = {
   'Default images restored.': 'Imágenes por defecto restablecidas.',
   'Could not restore the default images.': 'No se pudieron restablecer las imágenes por defecto.',
   'Could not read that image.': 'No se pudo leer esa imagen.',
+  'That image is too large. Choose one under 1.5 MB.': 'Elige una imagen de menos de 1,5 MB.',
   'Choose at least one logo first.': 'Elige al menos un logo primero.',
   'Could not set the logos.': 'No se pudieron guardar los logos.',
 

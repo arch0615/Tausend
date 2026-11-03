@@ -13,6 +13,7 @@ import { PrimaryButton } from '../../components/PrimaryButton';
 import { Banner } from '../../components/Banner';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { logoDataUri } from '../../branding/logoUri';
+import { setCachedBrandLogo1 } from '../../branding/brandCache';
 
 // Client, 26/27 Oct: sets the white-label logos for a panel by its identifier. Reached from
 // Installer mode, which is itself behind the panel's installer code: "images can only be changed
@@ -21,6 +22,10 @@ import { logoDataUri } from '../../branding/logoUri';
 // an account-ownership check, since this can be done before any account is linked to the panel.
 // Logo1 (portrait) is the splash screen; Logo2 (landscape) is the banner on that panel's own home
 // screen. Either can be set on its own, and both can be dropped again with the reset button.
+// ~1.5 MB of file, which base64 inflates by about a third. Comfortably fits a full-screen
+// 1080x1920 PNG while still refusing a raw camera photo.
+const MAX_LOGO_BASE64_LENGTH = 2_000_000;
+
 export function SetPanelLogoScreen() {
   const { colors, typography, spacing } = useTheme();
   const { t } = useLocale();
@@ -34,24 +39,32 @@ export function SetPanelLogoScreen() {
   const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Kept small on purpose: these images ride along in every login response for every account that
-  // has this panel linked, not fetched on demand -- a multi-megabyte photo would bloat every one
-  // of those logins for a logo nobody needs at full resolution. mediaType: 'photo' already accepts
-  // both jpg and png (client, 28 Oct: "it should admit both with and without background so it
-  // should be JPG or PNG") -- the actual detected type travels with the picked asset.
+  // quality 1 and no maxWidth/maxHeight deliberately: react-native-image-picker only skips its
+  // decode-and-re-encode pass when quality is exactly 100 and no max dimension is set (see
+  // Utils.shouldResizeImage). Any other setting re-encodes every pick, and that re-encode falls
+  // back to JPEG unless the mime is exactly image/png, which flattens a transparent logo onto
+  // black -- "even the logo 1 has no black background, it got the black background when uploaded"
+  // (client, 2 Nov). Passing through the original bytes also keeps the full-screen splash sharp,
+  // which a 512px cap could not.
+  //
+  // These images ride along in every login response for every account with this panel linked, so
+  // the size ceiling that the resize used to provide is enforced here instead, with a message,
+  // rather than silently shipping a multi-megabyte photo into every login.
   async function pickImage(onPicked: (upload: LogoUpload) => void) {
     setError(null);
     const result = await launchImageLibrary({
       mediaType: 'photo',
       includeBase64: true,
-      maxWidth: 512,
-      maxHeight: 512,
-      quality: 0.8,
+      quality: 1,
     });
     if (result.didCancel) return;
     const asset = result.assets?.[0];
     if (result.errorMessage || !asset?.base64) {
       setError(t('Could not read that image.'));
+      return;
+    }
+    if (asset.base64.length > MAX_LOGO_BASE64_LENGTH) {
+      setError(t('That image is too large. Choose one under 1.5 MB.'));
       return;
     }
     onPicked({ base64: asset.base64, mimeType: asset.type || 'image/jpeg' });
@@ -74,7 +87,12 @@ export function SetPanelLogoScreen() {
   // account down again. That refresh is what makes the change visible now rather than at the next
   // login -- the logos travel inside the account payload, so without it the installer uploads an
   // image and nothing on screen changes ("the logos do not change" -- client, 30 Oct).
-  async function run(action: () => Promise<{ State: ResponseState; Message?: string }>, okMessage: string, failMessage: string) {
+  async function run(
+    action: () => Promise<{ State: ResponseState; Message?: string }>,
+    okMessage: string,
+    failMessage: string,
+    afterOk?: () => Promise<void>,
+  ) {
     const validationError = validateCredentials();
     if (validationError) {
       setError(validationError);
@@ -86,6 +104,7 @@ export function SetPanelLogoScreen() {
     try {
       const res = await action();
       if (res.State === ResponseState.OK) {
+        await afterOk?.();
         await refreshSession();
         setNotice(okMessage);
         reset();
@@ -108,6 +127,15 @@ export function SetPanelLogoScreen() {
       () => setDeviceLogos(identifier.trim(), pin, logo1, logo2),
       t('Logos saved.'),
       t('Could not set the logos.'),
+      // The splash reads the device's cached Logo1, which refreshSession otherwise refills from
+      // whichever panel happens to come first in the account and carries one. With a stale test
+      // logo on another panel that is not the one just uploaded, so the installer sees no change
+      // ("a new Logo 1 can be uploaded but it doesn't work" -- client, 2 Nov). Writing it here
+      // first makes what was just set win, and the refresh below cannot overwrite it with an
+      // older panel's because resolveLogo1FromDevices now sees this panel's new value too.
+      async () => {
+        if (logo1) await setCachedBrandLogo1(logoDataUri(logo1.base64, logo1.mimeType));
+      },
     );
   }
 
@@ -116,6 +144,9 @@ export function SetPanelLogoScreen() {
       () => clearDeviceLogos(identifier.trim(), pin),
       t('Default images restored.'),
       t('Could not restore the default images.'),
+      // Drop the remembered splash logo too, or the next launch still opens on the brand that
+      // was just reset away.
+      () => setCachedBrandLogo1(undefined),
     );
   }
 
