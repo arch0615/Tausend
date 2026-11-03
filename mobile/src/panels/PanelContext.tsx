@@ -44,6 +44,17 @@ export function resolveAccountLogo1(panels: Panel[]): string | undefined {
 }
 
 /**
+ * Logo2, for the device selector, which like the splash renders with no panel chosen -- "remove
+ * the eagle from 'selector de equipo' screen, add logo 2 (horizontal) instead" (client, 2 Nov).
+ * Same first-panel-wins rule as resolveAccountLogo1, for the same reason. The home screen banner
+ * does NOT use this; it is per-panel, see resolvePanelLogo2.
+ */
+export function resolveAccountLogo2(panels: Panel[]): string | undefined {
+  const branded = panels.find((p) => p.kind === 'ip' && p.logo2Base64);
+  return branded?.logo2Base64 ? logoDataUri(branded.logo2Base64, branded.logo2MimeType) : undefined;
+}
+
+/**
  * Logo2, for the home screen banner. Scoped to the one panel being viewed, never the account:
  * "logo 2 is displayed on the main screen of the control unit to which that logo is linked"
  * (client, 30 Oct). Resolving this account-wide is what made one panel's banner appear over every

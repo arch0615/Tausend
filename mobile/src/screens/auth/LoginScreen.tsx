@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -11,16 +11,7 @@ import { FormField } from '../../components/FormField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Banner } from '../../components/Banner';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
-import { getCachedBrandLogo1 } from '../../branding/brandCache';
 import type { AuthStackParamList } from '../../navigation/types';
-
-// New APP Videos/'s login screen (the client's own reference for this app's design -- see
-// memory/project_frontend_design_philosophy.md) puts the eagle mark + "ALARMAS TAUSEND" wordmark
-// at the top of a white card floating on the gradient background, not as plain text directly on
-// the gradient. Sourced from the project root's own logo.jpeg, with its solid red background
-// keyed out to transparency (ffmpeg colorkey) so it sits directly on the card/gradient like the
-// video shows, rather than as an opaque red square.
-const EAGLE_LOGO = require('../../assets/images/eagle-logo.png');
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -35,20 +26,6 @@ export function LoginScreen({ route, navigation }: Props) {
   const [submitting, setSubmitting] = useState(false);
   // White-label branding (client, 26 Oct): this screen renders before any account is known, so it
   // can only show the brand remembered from the last successful login on this device -- see
-  // branding/brandCache.ts. Undefined until the read completes, which briefly shows the default
-  // Tausend mark even on a branded device; null/absent cache falls back to it permanently. Already
-  // a ready-to-render data URI (mime type baked in), not raw base64 -- see logoUri.ts.
-  const [brandLogo, setBrandLogo] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    getCachedBrandLogo1().then((logo) => {
-      if (!cancelled) setBrandLogo(logo);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Safety net. `submitting` drives a full-screen Modal (LoadingOverlay), so if it is ever left
   // true with nothing in flight, that modal sits invisibly over the screen and swallows every
@@ -112,21 +89,11 @@ export function LoginScreen({ route, navigation }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <View style={styles.logoWrap}>
-          <Image
-            source={brandLogo ? { uri: brandLogo } : EAGLE_LOGO}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View>
+        {/* No mark and no wordmark here, by instruction: "the login/registration screen must NOT
+            include the logo or the brand" (client, 2 Nov). This screen renders before any account
+            is known, so any brand shown on it would be a guess, and on a reseller's install the
+            wrong one. */}
         <Card style={styles.card}>
-          {!brandLogo && (
-            <>
-              <Text style={[styles.wordmark, { color: colors.brandBlue }]}>{t('ALARMAS')}</Text>
-              <Text style={[styles.wordmark, styles.wordmarkSecondLine, { color: colors.brandRed }]}>{t('TAUSEND')}</Text>
-            </>
-          )}
-
           {notice && <Banner kind="ok">{notice}</Banner>}
           {error && <Banner kind="error">{error}</Banner>}
 
@@ -187,33 +154,9 @@ const styles = StyleSheet.create({
   // The eagle sits above the card and slightly overlaps its top edge in New APP Videos/'s login,
   // not fully inside it -- a negative marginBottom on this wrapper pulls the card up underneath.
   // zIndex alone doesn't win on Android: Card's own `elevation` (see components/Card.tsx) makes
-  // Android paint it above a merely-higher-zIndex sibling that has no elevation of its own, so the
-  // card's white background was covering the eagle's lower half. elevation here has to beat
-  // Card's (2) for the logo to actually stay on top.
-  logoWrap: {
-    alignItems: 'center',
-    marginBottom: -28,
-    zIndex: 10,
-    elevation: 6,
-  },
-  logo: {
-    width: 140,
-    height: 140,
-  },
   card: {
     alignItems: 'stretch',
     paddingTop: 40,
-  },
-  // Stacked on two lines ("ALARMAS" over "TAUSEND"), not side by side -- matches the wordmark's
-  // actual layout in the reference video rather than one line with a space.
-  wordmark: {
-    fontSize: 30,
-    fontWeight: '800',
-    textAlign: 'center',
-    lineHeight: 34,
-  },
-  wordmarkSecondLine: {
-    marginBottom: 20,
   },
   // Pill-shaped, matching the reference's rounder login fields -- FormField's own default radius
   // is used everywhere else in the app and is deliberately left alone.

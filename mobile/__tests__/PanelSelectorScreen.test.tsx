@@ -17,7 +17,7 @@
 
 import React from 'react';
 import ReactTestRenderer, { act } from 'react-test-renderer';
-import { Text } from 'react-native';
+import { Image, Text } from 'react-native';
 import { PanelSelectorScreen } from '../src/screens/panels/PanelSelectorScreen';
 import { StatusDot } from '../src/components/StatusDot';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
@@ -43,6 +43,7 @@ jest.mock('../src/api/command', () => ({
 // static canned value standing in for "already resolved".
 let mockReachability: Record<string, boolean> = {};
 let mockRerenderListener: (() => void) | null = null;
+let mockLogo2Uri: string | undefined;
 jest.mock('../src/panels/PanelContext', () => {
   const React = require('react');
   // Module-level, not re-created per render: PanelContext's own `panels` is useMemo'd on
@@ -77,6 +78,7 @@ jest.mock('../src/panels/PanelContext', () => {
       reportReachability,
     };
   },
+  resolveAccountLogo2: () => mockLogo2Uri,
   };
 });
 
@@ -105,6 +107,7 @@ const labels = (tree: ReactTestRenderer.ReactTestRenderer) =>
 
 beforeEach(() => {
   mockReachability = {};
+  mockLogo2Uri = undefined;
   mockGetGeneralStatus.mockReset();
   mockGetGeneralStatus.mockResolvedValue({ State: 0, Text: 'READY' });
 });
@@ -206,5 +209,31 @@ describe('Selector de equipo, live status', () => {
     const labelled = labels(tree);
     expect(labelled).not.toContain('Online');
     expect(labelled).not.toContain('Offline');
+  });
+});
+
+/**
+ * Client, 2 Nov: "remove the eagle from 'selector de equipo' screen, add logo 2 (horizontal)
+ * instead". This reverses their 30 Oct instruction that the screen must not change, so the eagle
+ * being gone is the requirement now, not a regression.
+ */
+describe('Selector de equipo branding', () => {
+  it('shows the default logo2 banner, not the eagle, when no panel has a custom one', () => {
+    const tree = render();
+    const banner = tree.root.findAllByType(Image)[0];
+    expect((banner.props.source as { testUri: string }).testUri).toMatch(/logo2-default\.png$/);
+  });
+
+  it('never renders the eagle mark any more', () => {
+    const tree = render();
+    const sources = tree.root.findAllByType(Image).map((n) => (n.props.source as { testUri?: string })?.testUri ?? '');
+    expect(sources.some((u) => /eagle-logo\.png$/.test(u))).toBe(false);
+  });
+
+  it("shows the account's custom logo2 once one is set", () => {
+    mockLogo2Uri = 'data:image/png;base64,resellerBanner';
+    const tree = render();
+    const banner = tree.root.findAllByType(Image)[0];
+    expect(banner.props.source).toEqual({ uri: 'data:image/png;base64,resellerBanner' });
   });
 });

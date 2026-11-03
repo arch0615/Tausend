@@ -6,7 +6,7 @@ import { GradientBackground } from '../../components/GradientBackground';
 import { Card } from '../../components/Card';
 import { StatusDot } from '../../components/StatusDot';
 import { useLocale } from '../../i18n/LocaleContext';
-import { usePanels, type Panel } from '../../panels/PanelContext';
+import { usePanels, resolveAccountLogo2, type Panel } from '../../panels/PanelContext';
 import { getGeneralStatus } from '../../api/command';
 import { panelAnswered } from '../../panels/commandFeedback';
 import { FormField } from '../../components/FormField';
@@ -36,7 +36,7 @@ function delay(ms: number): Promise<void> {
 
 // Same asset as Login/Home's eagle mark -- New APP Videos/'s "Selector de Equipo" screen also
 // centers it above a white card, overlapping the card's top edge, rather than a plain page title.
-const EAGLE_LOGO = require('../../assets/images/eagle-logo.png');
+const LOGO2_DEFAULT = require('../../assets/images/logo2-default.png');
 
 
 // HomeScreen renders this inline when an account has several panels and none is chosen yet, so
@@ -96,6 +96,8 @@ export function PanelSelectorScreen({ navigation }: { navigation: SelectorNaviga
     }, [panels, reportReachability]),
   );
 
+  const brandLogo2 = resolveAccountLogo2(panels);
+
   // Client, 22 Oct: "the screen must be sorted alphabetically by device name" -- applied after the
   // search filter so a search still narrows the same alphabetical list rather than its own order.
   const filtered = panels
@@ -115,9 +117,14 @@ export function PanelSelectorScreen({ navigation }: { navigation: SelectorNaviga
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.logoWrap}>
-          {/* Never branded, whatever logos the account has: "'Selector de equipos' must not
-              change ... it should be done on the splash screen" (client, 30 Oct). */}
-          <Image source={EAGLE_LOGO} style={styles.logo} resizeMode="contain" />
+          {/* "Remove the eagle from 'selector de equipo' screen. Add logo 2 (horizontal) instead"
+              (client, 2 Nov), which reverses their 30 Oct note about this screen. No panel is
+              chosen yet here, so the logo is account-level rather than per-panel. */}
+          <Image
+            source={brandLogo2 ? { uri: brandLogo2 } : LOGO2_DEFAULT}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
         <Card style={styles.selectorCard}>
           <Text style={[styles.cardTitle, { color: colors.ink }]}>{t('Device selector')}</Text>
@@ -213,16 +220,14 @@ const styles = StyleSheet.create({
   // Card's (2) for the logo to actually stay on top -- see LoginScreen.tsx's identical fix.
   logoWrap: {
     alignItems: 'center',
-    marginBottom: -28,
-    zIndex: 10,
-    elevation: 6,
+    marginBottom: 16,
   },
   logo: {
-    width: 140,
-    height: 140,
+    width: '100%',
+    height: 40,
   },
   selectorCard: {
-    paddingTop: 40,
+    paddingTop: 20,
   },
   cardTitle: {
     fontSize: 18,

@@ -137,31 +137,38 @@ describe('login after a failed attempt (issue #21)', () => {
 });
 
 /**
- * White-label branding (client, 26 Oct): this screen renders before any account is known, so it
- * can only show the brand remembered from the last successful login on this device (see
- * branding/brandCache.ts) -- pinned here against the real AsyncStorage mock rather than a stubbed
- * cache module, since the read-on-mount timing is the behaviour actually worth covering.
+ * Client, 2 Nov: "the login/registration screen must NOT include the logo or the brand." This
+ * screen renders before any account is known, so whatever brand it showed would be a guess, and
+ * on a reseller's install the wrong one. These pin the absence, including that a cached brand no
+ * longer leaks onto it -- it used to read brandCache and render the remembered logo here.
  */
-describe('login screen branding cache', () => {
-  beforeEach(async () => {
+describe('login screen carries no branding', () => {
+  beforeEach(() => {
     mockLogin.mockReset();
     (globalThis as { __resetAsyncStorage?: () => void }).__resetAsyncStorage?.();
   });
 
-  it('shows the default Tausend mark when nothing is cached', async () => {
+  it('renders no image at all', async () => {
     const tree = await mount();
-    const logo = tree.root.findByType(Image);
-    expect(logo.props.source).not.toHaveProperty('uri');
-    expect(tree.root.findAllByType(Text).some((n) => n.props.children === 'ALARMAS')).toBe(true);
+    expect(tree.root.findAllByType(Image)).toHaveLength(0);
   });
 
-  it('shows the cached brand logo instead of the eagle/wordmark once loaded', async () => {
-    // The cache holds a ready-to-render data URI (mime type already baked in by AuthContext's
-    // resolveLogo1FromDevices), not raw base64 -- see branding/logoUri.ts.
+  it('renders no ALARMAS or TAUSEND wordmark', async () => {
+    const tree = await mount();
+    const texts = tree.root.findAllByType(Text).map((n) => n.props.children);
+    expect(texts).not.toContain('ALARMAS');
+    expect(texts).not.toContain('TAUSEND');
+  });
+
+  it('still shows nothing branded even when a logo is cached from a previous login', async () => {
     await AsyncStorage.setItem('tausend-cached-brand-logo1', 'data:image/png;base64,cachedBase64');
     const tree = await mount();
-    const logo = tree.root.findByType(Image);
-    expect(logo.props.source).toEqual({ uri: 'data:image/png;base64,cachedBase64' });
-    expect(tree.root.findAllByType(Text).some((n) => n.props.children === 'ALARMAS')).toBe(false);
+    expect(tree.root.findAllByType(Image)).toHaveLength(0);
+    expect(JSON.stringify(tree.toJSON())).not.toContain('cachedBase64');
+  });
+
+  it('still renders the form itself', async () => {
+    const tree = await mount();
+    expect(inputs(tree)).toHaveLength(2);
   });
 });

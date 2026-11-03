@@ -28,3 +28,22 @@ export async function setCachedBrandLogo1(logo1Base64: string | undefined): Prom
     // Best-effort -- the login screen just falls back to the default look if this didn't save.
   }
 }
+
+// "When opening the app for the first time, the splash screen must NOT appear" (client, 2 Nov).
+// On a fresh install nothing is known about which reseller's customer this is, and the splash is
+// the one screen that is pure branding, so it is held back until the app has been opened once.
+// Every later launch shows it, with the custom Logo1 if one is cached and the bundled default
+// otherwise. Reading it also marks it, so this answers true exactly once per install.
+const FIRST_LAUNCH_KEY = 'tausend-first-launch-done';
+
+export async function claimFirstLaunch(): Promise<boolean> {
+  try {
+    const seen = await AsyncStorage.getItem(FIRST_LAUNCH_KEY);
+    if (seen) return false;
+    await AsyncStorage.setItem(FIRST_LAUNCH_KEY, '1');
+    return true;
+  } catch {
+    // Unreadable storage should not turn into a permanently splash-less app.
+    return false;
+  }
+}
