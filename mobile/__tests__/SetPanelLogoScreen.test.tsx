@@ -96,7 +96,7 @@ describe('custom logo screen', () => {
   beforeEach(() => {
     mockSetDeviceLogos.mockReset().mockResolvedValue(OK);
     mockClearDeviceLogos.mockReset().mockResolvedValue(OK);
-    mockRefreshSession.mockClear();
+    mockRefreshSession.mockReset().mockResolvedValue(undefined);
     mockLaunchImageLibrary.mockReset();
     (globalThis as { __resetAsyncStorage?: () => void }).__resetAsyncStorage?.();
   });
@@ -184,7 +184,7 @@ describe('logo picking preserves the original image', () => {
   beforeEach(() => {
     mockSetDeviceLogos.mockReset().mockResolvedValue(OK);
     mockClearDeviceLogos.mockReset().mockResolvedValue(OK);
-    mockRefreshSession.mockClear();
+    mockRefreshSession.mockReset().mockResolvedValue(undefined);
     mockLaunchImageLibrary.mockReset();
     (globalThis as { __resetAsyncStorage?: () => void }).__resetAsyncStorage?.();
   });
@@ -230,12 +230,30 @@ describe('a saved Logo1 becomes the splash immediately', () => {
   beforeEach(() => {
     mockSetDeviceLogos.mockReset().mockResolvedValue(OK);
     mockClearDeviceLogos.mockReset().mockResolvedValue(OK);
-    mockRefreshSession.mockClear();
+    mockRefreshSession.mockReset().mockResolvedValue(undefined);
     mockLaunchImageLibrary.mockReset();
     (globalThis as { __resetAsyncStorage?: () => void }).__resetAsyncStorage?.();
   });
 
   it('caches the logo1 that was just saved', async () => {
+    const tree = await mount();
+    await fillCredentials(tree);
+    await pickInto(tree, 'Logo 1', 'brandNew', 'image/png');
+    await press(tree, 'Guardar logos');
+
+    await expect(getCachedBrandLogo1()).resolves.toBe('data:image/png;base64,brandNew');
+  });
+
+  it('wins over the session refresh, which refills the cache from another panel', async () => {
+    // The real refreshSession rewrites the cached splash logo from resolveLogo1FromDevices, which
+    // takes the first panel carrying any Logo1 -- an older one if a stale test logo is sitting on
+    // it. Standing in for that here is what makes the ordering observable: if the cache write runs
+    // before the refresh, the refresh silently undoes it and the splash opens on the stale logo,
+    // which is what the client saw as a black background on 3 Nov.
+    mockRefreshSession.mockImplementation(async () => {
+      await setCachedBrandLogo1('data:image/jpeg;base64,stalePanelLogo');
+    });
+
     const tree = await mount();
     await fillCredentials(tree);
     await pickInto(tree, 'Logo 1', 'brandNew', 'image/png');

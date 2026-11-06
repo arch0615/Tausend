@@ -104,8 +104,13 @@ export function SetPanelLogoScreen() {
     try {
       const res = await action();
       if (res.State === ResponseState.OK) {
-        await afterOk?.();
+        // Refresh FIRST, then let afterOk have the last word. The other way round, refreshSession
+        // refills the cached splash logo from resolveLogo1FromDevices, which takes whichever panel
+        // happens to come first and carry a Logo1, and that silently undid the write below: the
+        // Custom logo screen showed the new image while the splash still opened on an older panel's
+        // ("when opening the app, it appears with a black background" -- client, 3 Nov).
         await refreshSession();
+        await afterOk?.();
         setNotice(okMessage);
         reset();
         return;
@@ -127,12 +132,9 @@ export function SetPanelLogoScreen() {
       () => setDeviceLogos(identifier.trim(), pin, logo1, logo2),
       t('Logos saved.'),
       t('Could not set the logos.'),
-      // The splash reads the device's cached Logo1, which refreshSession otherwise refills from
-      // whichever panel happens to come first in the account and carries one. With a stale test
-      // logo on another panel that is not the one just uploaded, so the installer sees no change
-      // ("a new Logo 1 can be uploaded but it doesn't work" -- client, 2 Nov). Writing it here
-      // first makes what was just set win, and the refresh below cannot overwrite it with an
-      // older panel's because resolveLogo1FromDevices now sees this panel's new value too.
+      // The splash reads the device's cached Logo1. Writing the logo that was just uploaded makes
+      // it win over whichever panel resolveLogo1FromDevices would otherwise have picked, which is
+      // simply the first one carrying any Logo1 and so can be an older panel's.
       async () => {
         if (logo1) await setCachedBrandLogo1(logoDataUri(logo1.base64, logo1.mimeType));
       },
