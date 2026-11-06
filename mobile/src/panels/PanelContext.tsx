@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../auth/AuthContext';
 import { logoDataUri } from '../branding/logoUri';
+import { SELECTED_PANEL_KEY as STORAGE_KEY, type StoredSelection } from './selectionStorage';
 
 // A "panel" here unifies AccountDevice (IP) and AccountSmsDevice (SMS) into one list for
 // selection UI. The previous (Ionic) app tracked selection as an index into whichever of two
@@ -88,12 +89,6 @@ interface PanelContextValue {
 
 const PanelContext = createContext<PanelContextValue | null>(null);
 
-const STORAGE_KEY = 'tausend-selected-panel';
-
-interface StoredSelection {
-  kind: PanelKind;
-  deviceId: number;
-}
 
 export function PanelProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth();
