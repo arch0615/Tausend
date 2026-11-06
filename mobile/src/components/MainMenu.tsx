@@ -64,10 +64,6 @@ export function MainMenu({ visible, onClose }: { visible: boolean; onClose: () =
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={[styles.sheet, { backgroundColor: colors.bg }]}>
         <ScrollView contentContainerStyle={{ padding: 24 }}>
-          <Text style={[typography.label, { color: colors.onDarkDim, marginBottom: spacing.sm }]}>
-            {t('ALARMAS TAUSEND 2.0')}
-          </Text>
-
           <Pressable
             onPress={() => (panels.length > 0 ? go('PanelSelector') : go('SelectPairingType'))}
             style={[

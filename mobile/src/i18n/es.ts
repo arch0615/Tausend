@@ -16,7 +16,6 @@ export const es: Record<string, string> = {
   'This will log you out automatically after updating the panel.':
     'Se cerrará sesión automáticamente luego de actualizar el equipo.',
   Updating: 'Actualizando',
-  'ALARMAS TAUSEND 2.0': 'ALARMAS TAUSEND 2.0',
   'Your phone': 'Tu teléfono',
   'Currently connected to': 'Conectado actualmente a',
   'No network': 'Sin red',

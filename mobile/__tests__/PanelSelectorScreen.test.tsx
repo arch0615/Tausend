@@ -44,6 +44,7 @@ jest.mock('../src/api/command', () => ({
 let mockReachability: Record<string, boolean> = {};
 let mockRerenderListener: (() => void) | null = null;
 let mockLogo2Uri: string | undefined;
+let mockSelectedLogo2Uri: string | undefined;
 jest.mock('../src/panels/PanelContext', () => {
   const React = require('react');
   // Module-level, not re-created per render: PanelContext's own `panels` is useMemo'd on
@@ -79,6 +80,7 @@ jest.mock('../src/panels/PanelContext', () => {
     };
   },
   resolveAccountLogo2: () => mockLogo2Uri,
+  resolvePanelLogo2: () => mockSelectedLogo2Uri,
   };
 });
 
@@ -108,6 +110,7 @@ const labels = (tree: ReactTestRenderer.ReactTestRenderer) =>
 beforeEach(() => {
   mockReachability = {};
   mockLogo2Uri = undefined;
+  mockSelectedLogo2Uri = undefined;
   mockGetGeneralStatus.mockReset();
   mockGetGeneralStatus.mockResolvedValue({ State: 0, Text: 'READY' });
 });
@@ -228,6 +231,25 @@ describe('Selector de equipo branding', () => {
     const tree = render();
     const sources = tree.root.findAllByType(Image).map((n) => (n.props.source as { testUri?: string })?.testUri ?? '');
     expect(sources.some((u) => /eagle-logo\.png$/.test(u))).toBe(false);
+  });
+
+  it("prefers the selected panel's logo2, so this banner matches the home screen's", () => {
+    // These two screens used to resolve differently, this one taking the first panel carrying any
+    // Logo2 and the home screen taking the selected one. With different art on different panels the
+    // same banner came out at two different sizes, which is what the client reported on 3 Nov.
+    mockLogo2Uri = 'data:image/png;base64,someOtherPanel';
+    mockSelectedLogo2Uri = 'data:image/png;base64,theSelectedOne';
+    const tree = render();
+    const banner = tree.root.findAllByType(Image)[0];
+    expect(banner.props.source).toEqual({ uri: 'data:image/png;base64,theSelectedOne' });
+  });
+
+  it('falls back to the account logo2 when no panel is chosen yet', () => {
+    mockLogo2Uri = 'data:image/png;base64,accountWide';
+    mockSelectedLogo2Uri = undefined;
+    const tree = render();
+    const banner = tree.root.findAllByType(Image)[0];
+    expect(banner.props.source).toEqual({ uri: 'data:image/png;base64,accountWide' });
   });
 
   it("shows the account's custom logo2 once one is set", () => {

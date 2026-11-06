@@ -6,7 +6,7 @@ import { GradientBackground } from '../../components/GradientBackground';
 import { Card } from '../../components/Card';
 import { StatusDot } from '../../components/StatusDot';
 import { useLocale } from '../../i18n/LocaleContext';
-import { usePanels, resolveAccountLogo2, type Panel } from '../../panels/PanelContext';
+import { usePanels, resolveAccountLogo2, resolvePanelLogo2, type Panel } from '../../panels/PanelContext';
 import { getGeneralStatus } from '../../api/command';
 import { panelAnswered } from '../../panels/commandFeedback';
 import { FormField } from '../../components/FormField';
@@ -34,8 +34,8 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Same asset as Login/Home's eagle mark -- New APP Videos/'s "Selector de Equipo" screen also
-// centers it above a white card, overlapping the card's top edge, rather than a plain page title.
+// The same bundled banner the home screen falls back to, so an account with no custom branding
+// sees one mark in both places rather than two different ones.
 const LOGO2_DEFAULT = require('../../assets/images/logo2-default.png');
 
 
@@ -96,7 +96,13 @@ export function PanelSelectorScreen({ navigation }: { navigation: SelectorNaviga
     }, [panels, reportReachability]),
   );
 
-  const brandLogo2 = resolveAccountLogo2(panels);
+  // The selected panel's own Logo2 first, so this banner and the home screen's are the same image
+  // at the same size. They used to resolve differently -- this screen took the first panel carrying
+  // any Logo2, the home screen took the selected one -- and with different art on different panels
+  // the two banners came out different sizes ("logo 2 appears smaller than it does on the main
+  // screen; it should be the same size" -- client, 3 Nov). Falls back to the account-level one for
+  // the case this screen exists for: no panel chosen yet.
+  const brandLogo2 = resolvePanelLogo2(selected) ?? resolveAccountLogo2(panels);
 
   // Client, 22 Oct: "the screen must be sorted alphabetically by device name" -- applied after the
   // search filter so a search still narrows the same alphabetical list rather than its own order.
@@ -118,8 +124,7 @@ export function PanelSelectorScreen({ navigation }: { navigation: SelectorNaviga
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.logoWrap}>
           {/* "Remove the eagle from 'selector de equipo' screen. Add logo 2 (horizontal) instead"
-              (client, 2 Nov), which reverses their 30 Oct note about this screen. No panel is
-              chosen yet here, so the logo is account-level rather than per-panel. */}
+              (client, 2 Nov), which reverses their 30 Oct note about this screen. */}
           <Image
             source={brandLogo2 ? { uri: brandLogo2 } : LOGO2_DEFAULT}
             style={styles.logo}
