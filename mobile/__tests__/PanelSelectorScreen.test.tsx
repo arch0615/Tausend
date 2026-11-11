@@ -43,7 +43,6 @@ jest.mock('../src/api/command', () => ({
 // static canned value standing in for "already resolved".
 let mockReachability: Record<string, boolean> = {};
 let mockRerenderListener: (() => void) | null = null;
-let mockLogo2Uri: string | undefined;
 let mockSelectedLogo2Uri: string | undefined;
 jest.mock('../src/panels/PanelContext', () => {
   const React = require('react');
@@ -79,7 +78,6 @@ jest.mock('../src/panels/PanelContext', () => {
       reportReachability,
     };
   },
-  resolveAccountLogo2: () => mockLogo2Uri,
   resolvePanelLogo2: () => mockSelectedLogo2Uri,
   };
 });
@@ -109,7 +107,6 @@ const labels = (tree: ReactTestRenderer.ReactTestRenderer) =>
 
 beforeEach(() => {
   mockReachability = {};
-  mockLogo2Uri = undefined;
   mockSelectedLogo2Uri = undefined;
   mockGetGeneralStatus.mockReset();
   mockGetGeneralStatus.mockResolvedValue({ State: 0, Text: 'READY' });
@@ -233,29 +230,22 @@ describe('Selector de equipo branding', () => {
     expect(sources.some((u) => /eagle-logo\.png$/.test(u))).toBe(false);
   });
 
-  it("prefers the selected panel's logo2, so this banner matches the home screen's", () => {
-    // These two screens used to resolve differently, this one taking the first panel carrying any
-    // Logo2 and the home screen taking the selected one. With different art on different panels the
-    // same banner came out at two different sizes, which is what the client reported on 3 Nov.
-    mockLogo2Uri = 'data:image/png;base64,someOtherPanel';
+  it("shows the selected panel's own logo2, matching the home screen's exactly", () => {
     mockSelectedLogo2Uri = 'data:image/png;base64,theSelectedOne';
     const tree = render();
     const banner = tree.root.findAllByType(Image)[0];
     expect(banner.props.source).toEqual({ uri: 'data:image/png;base64,theSelectedOne' });
   });
 
-  it('falls back to the account logo2 when no panel is chosen yet', () => {
-    mockLogo2Uri = 'data:image/png;base64,accountWide';
-    mockSelectedLogo2Uri = undefined;
+  it('shows the bundled default, never some other panel\'s logo, when none is chosen yet', () => {
+    // The actual bug reported on 3 Nov and again on 6 Nov: this screen used to fall back to
+    // "the first panel anywhere carrying a Logo2" whenever nothing was selected, which is exactly
+    // the state this screen is in on the common path -- landing here straight from login with
+    // several panels. That surfaced a RANDOM panel's art, at its own aspect ratio, rendering at a
+    // different size than whichever panel's own banner the user would see next. There is no
+    // substitute for "no panel chosen" -- only the neutral default.
     const tree = render();
     const banner = tree.root.findAllByType(Image)[0];
-    expect(banner.props.source).toEqual({ uri: 'data:image/png;base64,accountWide' });
-  });
-
-  it("shows the account's custom logo2 once one is set", () => {
-    mockLogo2Uri = 'data:image/png;base64,resellerBanner';
-    const tree = render();
-    const banner = tree.root.findAllByType(Image)[0];
-    expect(banner.props.source).toEqual({ uri: 'data:image/png;base64,resellerBanner' });
+    expect((banner.props.source as { testUri: string }).testUri).toMatch(/logo2-default\.png$/);
   });
 });
