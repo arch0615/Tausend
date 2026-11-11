@@ -61,6 +61,25 @@ export function RootNavigator() {
     };
   }, []);
 
+  // AuthContext's own bootstrap effect writes a freshly recomputed brand logo to this same cache
+  // once its refresh-token round trip settles (its `finally` only flips isLoading after that write
+  // resolves) -- a write the mount-time read above cannot see, since it already ran and nothing
+  // keeps it listening for later changes. Without this, a correction that lands during THIS boot
+  // (a panel's branding being reset, say) would not actually show up until the NEXT cold start,
+  // even though the splash is very often still on screen (minSplashElapsed) for a while after
+  // isLoading settles -- the exact gap behind "the splash reads a stale value" class of reports.
+  useEffect(() => {
+    if (isLoading) return;
+    let active = true;
+    getCachedBrandLogo1().then((logo) => {
+      if (!active) return;
+      setSplash((prev) => (prev ? { ...prev, logo: logo ?? undefined } : prev));
+    });
+    return () => {
+      active = false;
+    };
+  }, [isLoading]);
+
   const plainBackground = <View style={{ flex: 1, backgroundColor: theme.colors.bg }} />;
 
   if (!splash) return plainBackground;
