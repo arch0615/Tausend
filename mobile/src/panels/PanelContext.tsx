@@ -56,6 +56,23 @@ export function resolvePanelLogo2(panel: Panel | null): string | undefined {
   return logoDataUri(panel.logo2Base64, panel.logo2MimeType);
 }
 
+/**
+ * Logo2, for the device selector, which like the splash renders with no panel chosen yet -- same
+ * first-panel-wins rule as resolveAccountLogo1, for the same reason: there is no "the" panel to
+ * ask, so the first one carrying this logo is the best available answer. Removing this fallback
+ * (f1db45d) was a misdiagnosis of "logo 2 appears smaller on the selector than on the main screen"
+ * -- that complaint was never about which panel's art was showing (the client's own screenshots,
+ * re-examined, show the identical wordmark at two sizes, not two different logos), and removing
+ * the fallback just swapped one wrong answer (the account's default Tausend mark) for another.
+ * "The system must read the image loaded for the first control panel ... and display it on this
+ * screen" (client, 12 Nov) is explicit and direct: this is the panel the selector should borrow
+ * from pre-selection, restored.
+ */
+export function resolveAccountLogo2(panels: Panel[]): string | undefined {
+  const branded = panels.find((p) => p.kind === 'ip' && p.logo2Base64);
+  return branded?.logo2Base64 ? logoDataUri(branded.logo2Base64, branded.logo2MimeType) : undefined;
+}
+
 /** 'unknown' means no live command has been attempted for this panel yet this session. */
 export type Reachability = 'online' | 'offline' | 'unknown';
 

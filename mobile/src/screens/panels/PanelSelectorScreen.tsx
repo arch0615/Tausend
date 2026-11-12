@@ -6,7 +6,7 @@ import { GradientBackground } from '../../components/GradientBackground';
 import { Card } from '../../components/Card';
 import { StatusDot } from '../../components/StatusDot';
 import { useLocale } from '../../i18n/LocaleContext';
-import { usePanels, resolvePanelLogo2, type Panel } from '../../panels/PanelContext';
+import { usePanels, resolveAccountLogo2, resolvePanelLogo2, type Panel } from '../../panels/PanelContext';
 import { getGeneralStatus } from '../../api/command';
 import { panelAnswered } from '../../panels/commandFeedback';
 import { FormField } from '../../components/FormField';
@@ -96,18 +96,20 @@ export function PanelSelectorScreen({ navigation }: { navigation: SelectorNaviga
     }, [panels, reportReachability]),
   );
 
-  // The selected panel's own Logo2, nothing else. This screen is reached two ways: landing here
-  // straight from login with several panels and none picked yet (selected is null), or navigating
-  // here mid-session via "switch panel" while one is already chosen. Showing some OTHER panel's
-  // logo as a stand-in for either case -- which is what resolveAccountLogo2 (first panel anywhere
-  // carrying one) did -- was the actual bug: on the landing path there is no "the" panel yet, so
-  // that fallback surfaced an arbitrary panel's art with its own aspect ratio, rendering at a
-  // different size than whichever panel's own banner the user would see next ("logo 2 appears
-  // smaller than it does on the main screen; it should be the same size" -- client, 3 Nov and
-  // again 6 Nov, since the previous fix only helped the switch-panel path). undefined here falls
-  // through to LOGO2_DEFAULT below, which is what should show whenever there is no specific panel
-  // to speak for -- never a random other one's.
-  const brandLogo2 = resolvePanelLogo2(selected);
+  // The selected panel's own Logo2 if one is chosen (mid-session "switch panel"), otherwise the
+  // first panel's -- there is no "the" panel on the landing path (straight from login, several
+  // panels, none picked yet), so the first one that has set a Logo2 is the best available answer.
+  // The 3/6 Nov "logo 2 appears smaller on the selector" report was taken at face value as "the
+  // wrong panel's logo is showing, with its own different aspect ratio", and the previous fix
+  // dropped this fallback to the bundled default entirely on that theory. Re-reading the client's
+  // own screenshots at full resolution shows the same wordmark, same font, same colours in both
+  // the "small" and "big" versions -- not two different logos -- and the two screenshots' panel
+  // status dots don't match each other, meaning they were never a single live comparison to begin
+  // with. There has never been a styling difference between this screen's box and the home
+  // screen's (same width/height/padding since the feature was first built). "The system must read
+  // the image loaded for the first control panel ... and display it on this screen" (client,
+  // 12 Nov) is explicit: this fallback belongs here.
+  const brandLogo2 = resolvePanelLogo2(selected) ?? resolveAccountLogo2(panels);
 
   // Client, 22 Oct: "the screen must be sorted alphabetically by device name" -- applied after the
   // search filter so a search still narrows the same alphabetical list rather than its own order.
